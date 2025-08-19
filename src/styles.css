@@ -1,1 +1,52 @@
 /* You can add global styles to this file, and also import other style files */
+/*
+:root{
+  --secondary-color: #023E8A;
+  --secondary-color-two: #E9ECEF;
+  --text-color-two: #808080;
+  --default-text-color: black;
+  --default-textButton-color: white;
+  --default-lineColor: #6C757D;
+  --input-color: #D9D9D9;
+  --placeHolder-color: rgba(0, 0, 0, 0.5);
+  --grid-color: rgba(0, 0, 0, 0.3);
+  --errorBox-bg-color: #FFE7E7;
+  --errorBox-color: #FF0F0F;
+  --providerButtons-bg-color: rgba(255, 255, 255, 0.5);
+  --danger-color: #d9534f
+}*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --ancient--color: #023E8A;
+  --defaultText-color: black;
+  --defaultTextButton-color: white;
+
+
+}
+
+html,body{
+  padding: 0;
+  margin: 0;
+  overflow-x: hidden;
+  color: var(--defaultText-color);
+  font-family: 'Inter', sans-serif;
+
+}
+
+::-webkit-scrollbar{
+  display: none;
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}

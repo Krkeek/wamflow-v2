@@ -1,0 +1,52 @@
+.Container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 3%;
+}
+.BrandName {
+  font-size: 1.5rem;
+  font-weight: bolder;
+}
+.BrandNameSpan {
+  color: var(--ancient--color)
+}
+
+.Logo {
+}
+
+.BrandDiv {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+.Button {
+  text-decoration: none;
+  font-size: 1rem;
+  color: var(--defaultTextButton-color);
+  font-weight: 500;
+  background-color: var(--ancient--color);
+  border-radius: 5px;
+  border: none;
+  padding: 0.7rem 1.3rem;
+  cursor: pointer;
+
+}
+
+@media screen and (max-width: 600px) {
+
+  .Button {
+    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
+  }
+  .BrandName {
+    font-size: 1.2rem;
+  }
+  .Logo {
+    width: 2rem;
+    height: auto;
+  }
+
+}
