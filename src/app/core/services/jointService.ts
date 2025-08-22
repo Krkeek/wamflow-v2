@@ -14,19 +14,22 @@ import CellView = dia.CellView;
 })
 export class JointService implements OnDestroy {
   public selectedCells$ = new BehaviorSubject<ID[]>([]);
-  private graph?: dia.Graph;
-  private paper?: dia.Paper;
-  private paperDimensions = {
+
+  private readonly _elementCreatorService = inject(ElementCreatorService);
+  private _graph?: dia.Graph;
+  private _paper?: dia.Paper;
+  private _paperDimensions = {
     width: JOINT_CONSTRAINTS.paperDefaultDimensions.width,
     height: JOINT_CONSTRAINTS.paperDefaultDimensions.height,
   };
-  private readonly elementCreatorService = inject(ElementCreatorService);
-
-  private groupDragActive = false;
-  private groupDragStart: { x: number; y: number } | null = null;
-  private groupBasePos = new Map<ID, { x: number; y: number }>();
-  private origin: dia.Point | null = null;
-  private rubberNode: SVGRectElement | null = null;
+  private _groupDragActive = false;
+  private _groupDragStart: { x: number; y: number } | null = null;
+  private _groupBasePos = new Map<ID, { x: number; y: number }>();
+  private _origin?: dia.Point;
+  private _rubberNode?: SVGRectElement;
+  private _multiBoxG?: SVGGElement;
+  private _multiBoxRect?: SVGRectElement;
+  private _multiBoxDeleteBtn?: SVGTextElement;
 
   constructor() {
     this.selectedCells$
@@ -38,23 +41,23 @@ export class JointService implements OnDestroy {
         const prevSet = new Set(prevIds);
         const currSet = new Set(currIds);
 
-        // unhighlight IDs that were removed
         for (const id of prevIds) {
-          if (!currSet.has(id)) this.clearSelection(id);
+          if (!currSet.has(id)) this.unhighlightCell(id);
         }
-
-        // highlight IDs that were added
         for (const id of currIds) {
           if (!prevSet.has(id)) {
             this.highlightCell(id);
           }
         }
       });
+
+    this.selectedCells$
+      .pipe(distinctUntilChanged((a, b) => this.arraysEqual(a, b)))
+      .subscribe((currIds) => this.updateMultiSelectionBox(currIds));
   }
 
   private _toolsView?: ToolsView;
-
-  public get toolsView(): ToolsView {
+  private get toolsView(): ToolsView {
     if (!this._toolsView) {
       throw new Error('No tools view found.');
     }
@@ -63,11 +66,11 @@ export class JointService implements OnDestroy {
 
   public initPaper(canvas: HTMLElement): void {
     this.initGraph();
-    this.paper = new dia.Paper({
+    this._paper = new dia.Paper({
       el: canvas,
-      model: this.graph,
-      width: this.paperDimensions.width,
-      height: this.paperDimensions.height,
+      model: this._graph,
+      width: this._paperDimensions.width,
+      height: this._paperDimensions.height,
       gridSize: 10,
       drawGridSize: 40,
       drawGrid: {
@@ -85,13 +88,8 @@ export class JointService implements OnDestroy {
     this.initToolTips();
     this.bindPaperEvents();
   }
-
-  public initPalettePaper(canvas: HTMLElement): {
-    graph: dia.Graph;
-    paper: dia.Paper;
-  } {
+  public initPalettePaper(canvas: HTMLElement): { graph: dia.Graph; paper: dia.Paper } {
     const graph = this.getPaletteItemGraph();
-
     const paper = new dia.Paper({
       el: canvas,
       model: graph,
@@ -105,7 +103,7 @@ export class JointService implements OnDestroy {
   }
 
   public addCell(cell: WamElements, specificGraph?: dia.Graph, specificPaper?: dia.Paper): void {
-    const newCell = this.elementCreatorService.create(cell);
+    const newCell = this._elementCreatorService.create(cell);
 
     if (specificGraph) {
       newCell.position(20, 10);
@@ -116,15 +114,20 @@ export class JointService implements OnDestroy {
         padding: 5,
       });
     } else {
-      if (this.graph) {
-        newCell.addTo(this.graph);
+      if (this._graph) {
+        newCell.addTo(this._graph);
       }
     }
   }
-
-  /*
-  public removeCell(cellId: string): void {}
-*/
+  public addCellAt(cell: WamElements, x: number, y: number) {
+    if (!this._graph) return;
+    const el = this._elementCreatorService.create(cell);
+    const { width, height } = el.size();
+    el.position(x - width / 2, y - height / 2);
+    el.addTo(this._graph);
+    this.clearAllSelection();
+    this.addToSelection(el.id);
+  }
 
   public highlightCell(cellId: ID): void {
     const cell = this.getCellById(cellId);
@@ -132,12 +135,10 @@ export class JointService implements OnDestroy {
     cell.attr('path/stroke', JOINT_CONSTRAINTS.primaryStroke);
     cell.attr('top/stroke', JOINT_CONSTRAINTS.primaryStroke);
   }
-
-  /*
-  public duplicateCell(cellId: string): void {}
-*/
-
   public unhighlightCell(cellId: ID): void {
+    const cellView = this.getCellView(cellId);
+    cellView.removeTools();
+
     const cell = this.getCellById(cellId);
     cell.attr('body/stroke', JOINT_CONSTRAINTS.defaultStroke);
     cell.attr('path/stroke', JOINT_CONSTRAINTS.defaultStroke);
@@ -145,36 +146,372 @@ export class JointService implements OnDestroy {
   }
 
   public getCellById(cellId: ID) {
-    const cell = this.graph?.getCell(cellId);
+    const cell = this._graph?.getCell(cellId);
     if (!cell) throw Error(`Unable to get cell ${cellId}`);
     return cell;
   }
 
-  public clearSelection(cellId: ID): void {
-    const cellView = this.getCellView(cellId);
-    cellView.removeTools();
-    this.unhighlightCell(cellId);
-  }
-
   public ngOnDestroy(): void {
-    if (!this.paper || !this.graph) throw new Error('No paper or graph found.');
+    if (!this._paper || !this._graph) throw new Error('No _paper or _graph found.');
 
-    this.paper.off('element:pointerdown');
-    this.paper.off('element:mouseover');
-    this.paper.off('element:mouseleave');
-    this.paper.off('element:pointermove');
-    this.paper.off('element:pointerup');
-    this.paper.off('link:pointerdown');
-    this.paper.off('link:pointerup');
-    this.paper.off('blank:pointerclick');
-    this.paper.off('blank:pointerdown');
-    this.paper.off('blank:pointerup');
-    this.paper.off('blank:pointermove');
-    this.paper.off('link:mouseenter');
-    this.paper.off('blank:mouseover');
-    this.graph.off('change add');
-    this.graph.off('remove');
+    this._paper.off('element:pointerdown');
+    this._paper.off('element:mouseover');
+    this._paper.off('element:mouseleave');
+    this._paper.off('element:pointermove');
+    this._paper.off('element:pointerup');
+    this._paper.off('link:pointerdown');
+    this._paper.off('link:pointerup');
+    this._paper.off('blank:pointerclick');
+    this._paper.off('blank:pointerdown');
+    this._paper.off('blank:pointerup');
+    this._paper.off('blank:pointermove');
+    this._paper.off('link:mouseenter');
+    this._paper.off('blank:mouseover');
+    this._graph.off('change add');
+    this._graph.off('remove');
   }
+
+  public clientToLocal(clientX: number, clientY: number) {
+    if (!this._paper) throw new Error('No _paper or _graph found.');
+    return this._paper.clientToLocalPoint({ x: clientX, y: clientY });
+  }
+
+  private initGraph(): dia.Graph | void {
+    this._graph = new dia.Graph({}, { cellNamespace: shapes });
+  }
+  private getPaletteItemGraph(): dia.Graph {
+    return new dia.Graph({}, { cellNamespace: shapes });
+  }
+  private getCellView(cellId: ID): CellView {
+    const cell = this.getCellById(cellId);
+    if (!this._paper) throw new Error('No _paper found.');
+    return cell.findView(this._paper);
+  }
+  private initToolTips(): void {
+    const boundaryTool = new elementTools.Boundary();
+    const removeButton = new elementTools.Remove();
+    const resizeButton = new ResizeControl();
+
+    this._toolsView = new dia.ToolsView({
+      tools: [boundaryTool, removeButton, resizeButton],
+    });
+  }
+  private bindPaperEvents(): void {
+    if (!this._paper || !this._graph) throw new Error('No _paper or _graph found.');
+
+    // attach
+    this._paper.on('element:pointerdown', this.onElementPointerDown);
+    this._paper.on('element:pointermove', this.onElementPointerMove);
+    this._paper.on('element:pointerup', this.onElementPointerUp);
+
+    /*    this._paper.on('element:mouseover', this.onElementMouseOver);
+    this._paper.on('element:mouseleave', this.onElementMouseLeave);*/
+    this._paper.on('element:contextmenu', this.onElementContextMenu);
+    /*
+    this._paper.on('link:pointerdown', this.onLinkPointerDown);
+*/
+    /*    this._paper.on('link:pointerup', this.onLinkPointerUp);
+    this._paper.on('link:mouseenter', this.onLinkMouseEnter);*/
+    this._paper.on('blank:pointerclick', this.onBlankPointerClick);
+    this._paper.on('blank:pointerdown', this.onBlankPointerDown);
+    this._paper.on('blank:pointerup', this.onBlankPointerUp);
+    this._paper.on('blank:pointermove', this.onBlankPointerMove);
+    /*    this._paper.on('blank:mouseover', this.onBlankMouseOver);
+    this._graph.on('change add', this.onGraphUpdate);*/
+    this._graph.on('remove', this.onGraphRemove);
+  }
+
+  private setSelection(ids: ID[]) {
+    this.selectedCells$.next([...ids]);
+  }
+  private clearAllSelection() {
+    this.selectedCells$.next([]);
+  }
+  private addToSelection(id: ID) {
+    const next = new Set(this.selectedCells$.value);
+    next.add(id);
+    this.selectedCells$.next([...next]);
+  }
+  private removeFromSelection(id: ID) {
+    const next = new Set(this.selectedCells$.value);
+    next.delete(id);
+    this.selectedCells$.next([...next]);
+  }
+  private getSelectedIds(): ID[] {
+    return this.selectedCells$.value ?? [];
+  }
+  private removeMultiSelectionBox() {
+    if (this._multiBoxG && this._multiBoxG.parentNode) {
+      this._multiBoxG.parentNode.removeChild(this._multiBoxG);
+    }
+    this._multiBoxG = undefined;
+    this._multiBoxRect = undefined;
+  }
+  private arraysEqual(a: ID[], b: ID[]) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  }
+
+  private onElementPointerDown = (
+    elementView: dia.ElementView,
+    _evt: dia.Event,
+    x?: number,
+    y?: number,
+  ) => {
+    this.initDraggingCells(elementView, x, y);
+  };
+
+  private onElementPointerMove = (
+    view: dia.ElementView,
+    _evt: dia.Event,
+    x?: number,
+    y?: number,
+  ) => {
+    this.dragCellsAsGroup(view, x, y);
+  };
+
+  private onElementContextMenu = (elementView: dia.ElementView) => {
+    this.showToolView(elementView);
+  };
+
+  private onElementPointerUp = () => {
+    this.resetGroupDragConstraints();
+  };
+
+  private onBlankPointerClick = () => {
+    this.clearAllSelection();
+  };
+  private onBlankPointerDown = (_evt: dia.Event, x: number, y: number) => {
+    this.clearAllSelection();
+    this.createRubberNode(x, y);
+  };
+
+  private onBlankPointerUp = (_evt: dia.Event, x: number, y: number) => {
+    this.selectAllWithRubberNode(x, y);
+  };
+
+  private onBlankPointerMove = (_evt: dia.Event, x: number, y: number) => {
+    this.adjustRubberNodeOnMove(x, y);
+  };
+
+  private onGraphRemove = (cell: dia.Cell) => {
+    this.removeFromSelection(cell.id);
+  };
+
+  private createRubberNode = (x: number, y: number) => {
+    this._origin = { x, y };
+
+    const svg = this._paper?.svg as SVGSVGElement | undefined;
+    if (!svg) return;
+    const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    r.setAttribute('x', String(x));
+    r.setAttribute('y', String(y));
+    r.setAttribute('width', '1');
+    r.setAttribute('height', '1');
+    r.setAttribute('fill', 'rgba(30,144,255,0.12)');
+    r.setAttribute('stroke', '#1e90ff');
+    r.setAttribute('stroke-dasharray', '4,2');
+    r.setAttribute('pointer-events', 'none'); // don't steal mouse
+    svg.appendChild(r);
+
+    this._rubberNode = r;
+  };
+  private selectAllWithRubberNode = (x: number, y: number) => {
+    if (!this._origin) return;
+
+    const x0 = Math.min(this._origin.x, x);
+    const y0 = Math.min(this._origin.y, y);
+    const w = Math.abs(x - this._origin.x);
+    const h = Math.abs(y - this._origin.y);
+    const area = new g.Rect(x0, y0, w, h);
+
+    const views = this._paper?.findElementViewsInArea(area) ?? [];
+
+    const ids: ID[] = views.filter((v) => v.model.isElement()).map((v) => String(v.model.id));
+    this.setSelection(ids);
+
+    if (this._rubberNode) {
+      this._rubberNode.parentNode?.removeChild(this._rubberNode);
+      this._rubberNode = undefined;
+    }
+    this._origin = undefined;
+  };
+  private adjustRubberNodeOnMove = (x: number, y: number) => {
+    if (!this._origin || !this._rubberNode) return;
+    const x0 = Math.min(this._origin.x, x);
+    const y0 = Math.min(this._origin.y, y);
+    const w = Math.abs(x - this._origin.x);
+    const h = Math.abs(y - this._origin.y);
+    this._rubberNode.setAttribute('x', String(x0));
+    this._rubberNode.setAttribute('y', String(y0));
+    this._rubberNode.setAttribute('width', String(w));
+    this._rubberNode.setAttribute('height', String(h));
+  };
+  private updateMultiSelectionBox(selectedIds: ID[]) {
+    if (!this._paper) return;
+    if (selectedIds.length < 2) return;
+
+    if (!selectedIds.length) {
+      this.removeMultiSelectionBox();
+      return;
+    }
+
+    // Compute bbox
+    const views = selectedIds
+      .map((id) => this._graph?.getCell(id))
+      .filter((c): c is dia.Element => !!c && c.isElement())
+      .map((el) => el.findView(this._paper!))
+      .filter((v): v is dia.ElementView => !!v);
+
+    if (!views.length) {
+      this.removeMultiSelectionBox();
+      return;
+    }
+
+    let bbox = views[0].getBBox({ useModelGeometry: true });
+    for (let i = 1; i < views.length; i++) {
+      bbox = bbox.union(views[i].getBBox({ useModelGeometry: true }));
+    }
+    bbox = bbox.inflate(6);
+
+    // Ensure overlay
+    const svg = this._paper.svg as SVGSVGElement;
+    const viewportLayer =
+      (svg.querySelector('.joint-cells-layer.joint-viewport') as SVGGElement) ??
+      (svg.firstElementChild as SVGGElement);
+
+    if (!this._multiBoxG) {
+      this._multiBoxG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      this._multiBoxG.setAttribute('class', 'wam-multi-select-box');
+
+      this._multiBoxRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      this._multiBoxRect.setAttribute('fill', 'none');
+      this._multiBoxRect.setAttribute('stroke', '#1e90ff');
+      this._multiBoxRect.setAttribute('stroke-width', '1.5');
+      this._multiBoxRect.setAttribute('stroke-dasharray', '6,4');
+      this._multiBoxRect.setAttribute('vector-effect', 'non-scaling-stroke');
+      this._multiBoxRect.setAttribute('pointer-events', 'none'); // let events pass through
+
+      // DELETE BUTTON ("X")
+      this._multiBoxDeleteBtn = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      this._multiBoxDeleteBtn.textContent = '✕';
+      this._multiBoxDeleteBtn.setAttribute('fill', 'red');
+      this._multiBoxDeleteBtn.setAttribute('font-size', '14');
+      this._multiBoxDeleteBtn.setAttribute('cursor', 'pointer');
+
+      // Click handler: delete all selected cells
+      this._multiBoxDeleteBtn.addEventListener('click', () => {
+        if (!this._graph) return;
+        const ids = this.selectedCells$.value ?? [];
+        ids.forEach((id) => this._graph?.getCell(id)?.remove());
+        this.selectedCells$.next([]);
+      });
+
+      this._multiBoxG.appendChild(this._multiBoxRect);
+      this._multiBoxG.appendChild(this._multiBoxDeleteBtn);
+      viewportLayer.appendChild(this._multiBoxG);
+    }
+
+    // Update box
+    this._multiBoxRect!.setAttribute('x', String(bbox.x));
+    this._multiBoxRect!.setAttribute('y', String(bbox.y));
+    this._multiBoxRect!.setAttribute('width', String(bbox.width));
+    this._multiBoxRect!.setAttribute('height', String(bbox.height));
+
+    // Position the delete button at top-right
+    this._multiBoxDeleteBtn!.setAttribute('x', String(bbox.x + bbox.width - 6));
+    this._multiBoxDeleteBtn!.setAttribute('y', String(bbox.y - 4));
+  }
+
+  private dragCellsAsGroup(view: dia.ElementView, x?: number, y?: number) {
+    if (!this._groupDragActive || !this._groupDragStart) return;
+
+    const dx = (x ?? 0) - this._groupDragStart.x;
+    const dy = (y ?? 0) - this._groupDragStart.y;
+
+    this._graph?.startBatch('group-move');
+
+    const grabbedId = String(view.model.id);
+    for (const id of this.getSelectedIds()) {
+      if (id === grabbedId) continue;
+      const base = this._groupBasePos.get(id);
+      const cell = this._graph?.getCell(id);
+      if (base && cell && cell.isElement()) {
+        (cell as dia.Element).position(base.x + dx, base.y + dy);
+      }
+    }
+
+    this._graph?.stopBatch('group-move');
+  }
+  private initDraggingCells(elementView: dia.ElementView, x?: number, y?: number) {
+    const ids = this.getSelectedIds();
+    const thisId = String(elementView.model.id);
+
+    if (!ids.includes(thisId)) {
+      this.clearAllSelection();
+      this.addToSelection(elementView.model.id);
+    }
+
+    if (this.getSelectedIds().length < 2) {
+      this._groupDragActive = false;
+      this._groupBasePos.clear();
+      this._groupDragStart = null;
+      return;
+    }
+
+    const startX = x ?? 0;
+    const startY = y ?? 0;
+    this._groupDragStart = { x: startX, y: startY };
+    this._groupBasePos.clear();
+
+    for (const id of this.getSelectedIds()) {
+      const cell = this._graph?.getCell(id);
+      if (cell && cell.isElement()) {
+        const { x: px, y: py } = (cell as dia.Element).position();
+        this._groupBasePos.set(id, { x: px, y: py });
+      }
+    }
+    this._groupDragActive = true;
+  }
+  private resetGroupDragConstraints() {
+    this._groupDragActive = false;
+    this._groupBasePos.clear();
+    this._groupDragStart = null;
+  }
+
+  private showToolView = (elementView: dia.ElementView) => {
+    if (!this.selectedCells$.value.find((id) => id == elementView.model.id)) {
+      this.clearAllSelection();
+      this.addToSelection(elementView.model.id);
+    }
+    const cellView = this.getCellView(elementView.model.id);
+    cellView.addTools(this.toolsView);
+  };
+
+  /*  private onLinkPointerUp = (linkView: dia.LinkView, evt: dia.Event) => {
+
+};*/
+
+  /*
+  private onLinkMouseEnter = (linkView: dia.LinkView, evt: dia.Event) => {};
+*/
+
+  /*
+  private onBlankMouseOver = (evt: dia.Event) => {};
+*/
+
+  /*  private onGraphUpdate = (cell: dia.Cell, opt: dia.Cell.Options) => {
+
+  };*/
+
+  /*
+public removeCell(cellId: string): void {}
+*/
+
+  /*
+  public duplicateCell(cellId: string): void {}
+*/
 
   /*  public exportAsJson(): string | void {}
 
@@ -205,265 +542,20 @@ export class JointService implements OnDestroy {
   /*  public setPaperDimensions(width: number, height: number): void {
     if (width < 4000 || height < 4000)
       throw new Error('Paper Dimensions must be greater than 4000px');
-    this.paper?.setDimensions(width, height);
+    this._paper?.setDimensions(width, height);
   }*/
   /*
 
   public setCellDimensions(width: number, height: number): void {}
 */
 
-  public clientToLocal(clientX: number, clientY: number) {
-    if (!this.paper) return { x: 0, y: 0 };
-    return this.paper.clientToLocalPoint({ x: clientX, y: clientY });
-  }
+  /*
+private onElementMouseOver = (elementView: dia.ElementView) => {};
 
-  public addCellAt(cell: WamElements, x: number, y: number) {
-    if (!this.graph) return;
-    const el = this.elementCreatorService.create(cell);
-    const { width, height } = el.size();
-    el.position(x - width / 2, y - height / 2);
-    el.addTo(this.graph);
-    this.clearAllSelection();
-    this.addToSelection(el.id);
-  }
+private onElementMouseLeave = (elementView: dia.ElementView) => {};
+*/
 
-  public setSelection(ids: ID[]) {
-    this.selectedCells$.next([...ids]);
-  }
-
-  public clearAllSelection() {
-    this.selectedCells$.next([]);
-  }
-
-  public addToSelection(id: ID) {
-    const next = new Set(this.selectedCells$.value);
-    next.add(id);
-    this.selectedCells$.next([...next]);
-  }
-
-  public removeFromSelection(id: ID) {
-    const next = new Set(this.selectedCells$.value);
-    next.delete(id);
-    this.selectedCells$.next([...next]);
-  }
-
-  private getSelectedIds(): ID[] {
-    return this.selectedCells$.value ?? [];
-  }
-
-  private arraysEqual(a: ID[], b: ID[]) {
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-    return true;
-  }
-
-  private getCellView(cellId: ID): CellView {
-    const cell = this.getCellById(cellId);
-    if (!this.paper) throw new Error('No paper found.');
-    return cell.findView(this.paper);
-  }
-
-  private initGraph(): dia.Graph | void {
-    this.graph = new dia.Graph({}, { cellNamespace: shapes });
-  }
-
-  private getPaletteItemGraph(): dia.Graph {
-    return new dia.Graph({}, { cellNamespace: shapes });
-  }
-
-  private initToolTips(): void {
-    const boundaryTool = new elementTools.Boundary();
-    const removeButton = new elementTools.Remove();
-    const resizeButton = new ResizeControl();
-
-    this._toolsView = new dia.ToolsView({
-      tools: [boundaryTool, removeButton, resizeButton],
-    });
-  }
-
-  private bindPaperEvents(): void {
-    if (!this.paper || !this.graph) throw new Error('No paper or graph found.');
-
-    // attach
-    this.paper.on('element:pointerdown', this.onElementPointerDown);
-    this.paper.on('element:pointermove', this.onElementPointerMove);
-    this.paper.on('element:pointerup', this.onElementPointerUp);
-
-    /*    this.paper.on('element:mouseover', this.onElementMouseOver);
-    this.paper.on('element:mouseleave', this.onElementMouseLeave);*/
-    this.paper.on('element:contextmenu', this.onElementContextMenu);
-    this.paper.on('link:pointerdown', this.onLinkPointerDown);
-    /*    this.paper.on('link:pointerup', this.onLinkPointerUp);
-    this.paper.on('link:mouseenter', this.onLinkMouseEnter);*/
-    this.paper.on('blank:pointerclick', this.onBlankPointerClick);
-    this.paper.on('blank:pointerdown', this.onBlankPointerDown);
-    this.paper.on('blank:pointerup', this.onBlankPointerUp);
-    this.paper.on('blank:pointermove', this.onBlankPointerMove);
-    /*    this.paper.on('blank:mouseover', this.onBlankMouseOver);
-    this.graph.on('change add', this.onGraphUpdate);*/
-    this.graph.on('remove', this.onGraphRemove);
-  }
-
-  private onElementPointerDown = (
-    elementView: dia.ElementView,
-    _evt: dia.Event,
-    x?: number,
-    y?: number,
-  ) => {
-    const ids = this.getSelectedIds();
-    const thisId = String(elementView.model.id);
-
-    if (!ids.includes(thisId)) {
-      this.clearAllSelection();
-      this.addToSelection(elementView.model.id);
-    }
-
-    if (this.getSelectedIds().length < 2) {
-      this.groupDragActive = false;
-      this.groupBasePos.clear();
-      this.groupDragStart = null;
-      return;
-    }
-
-    const startX = x ?? 0;
-    const startY = y ?? 0;
-    this.groupDragStart = { x: startX, y: startY };
-    this.groupBasePos.clear();
-
-    for (const id of this.getSelectedIds()) {
-      const cell = this.graph?.getCell(id);
-      if (cell && cell.isElement()) {
-        const { x: px, y: py } = (cell as dia.Element).position();
-        this.groupBasePos.set(id, { x: px, y: py });
-      }
-    }
-    this.groupDragActive = true;
-  };
-
-  private onElementPointerMove = (
-    view: dia.ElementView,
-    _evt: dia.Event,
-    x?: number,
-    y?: number,
-  ) => {
-    if (!this.groupDragActive || !this.groupDragStart) return;
-
-    const dx = (x ?? 0) - this.groupDragStart.x;
-    const dy = (y ?? 0) - this.groupDragStart.y;
-
-    this.graph?.startBatch('group-move');
-
-    const grabbedId = String(view.model.id);
-    for (const id of this.getSelectedIds()) {
-      if (id === grabbedId) continue;
-      const base = this.groupBasePos.get(id);
-      const cell = this.graph?.getCell(id);
-      if (base && cell && cell.isElement()) {
-        (cell as dia.Element).position(base.x + dx, base.y + dy);
-      }
-    }
-
-    this.graph?.stopBatch('group-move');
-  };
-
-  private onLinkPointerDown = (linkView: dia.LinkView, evt: dia.Event) => {
+  /*  private onLinkPointerDown = (linkView: dia.LinkView, evt: dia.Event) => {
     console.log('[Joint] link:pointerdown', { id: linkView.model.id, evt });
-    // TODO: select link, show tools
-  };
-  /*
-  private onElementMouseOver = (elementView: dia.ElementView) => {};
-
-  private onElementMouseLeave = (elementView: dia.ElementView) => {};
-*/
-
-  private onElementContextMenu = (elementView: dia.ElementView) => {
-    if (!this.selectedCells$.value.find((id) => id == elementView.model.id)) {
-      this.addToSelection(elementView.model.id);
-    }
-    const cellView = this.getCellView(elementView.model.id);
-    cellView.addTools(this.toolsView);
-  };
-
-  private onElementPointerUp = () => {
-    this.groupDragActive = false;
-    this.groupBasePos.clear();
-    this.groupDragStart = null;
-  };
-
-  /*  private onLinkPointerUp = (linkView: dia.LinkView, evt: dia.Event) => {
-
   };*/
-
-  private onBlankPointerClick = () => {
-    this.clearAllSelection();
-  };
-  private onBlankPointerDown = (_evt: dia.Event, x: number, y: number) => {
-    // start a fresh selection
-    this.clearAllSelection();
-
-    this.origin = { x, y };
-
-    // create the overlay rect inside the paper's <svg>
-    const svg = this.paper?.svg as SVGSVGElement | undefined;
-    if (!svg) return;
-
-    const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    r.setAttribute('x', String(x));
-    r.setAttribute('y', String(y));
-    r.setAttribute('width', '1');
-    r.setAttribute('height', '1');
-    r.setAttribute('fill', 'rgba(30,144,255,0.12)');
-    r.setAttribute('stroke', '#1e90ff');
-    r.setAttribute('stroke-dasharray', '4,2');
-    r.setAttribute('pointer-events', 'none'); // don't steal mouse
-    svg.appendChild(r);
-
-    this.rubberNode = r;
-  };
-
-  private onBlankPointerUp = (_evt: dia.Event, x: number, y: number) => {
-    if (!this.origin) return;
-
-    const x0 = Math.min(this.origin.x, x);
-    const y0 = Math.min(this.origin.y, y);
-    const w = Math.abs(x - this.origin.x);
-    const h = Math.abs(y - this.origin.y);
-    const area = new g.Rect(x0, y0, w, h);
-
-    const views = this.paper?.findElementViewsInArea(area) ?? [];
-    const ids: ID[] = views.filter((v) => v.model.isElement()).map((v) => String(v.model.id));
-    this.setSelection(ids);
-    if (this.rubberNode) {
-      this.rubberNode.parentNode?.removeChild(this.rubberNode);
-      this.rubberNode = null;
-    }
-    this.origin = null;
-  };
-
-  private onBlankPointerMove = (_evt: dia.Event, x: number, y: number) => {
-    if (!this.origin || !this.rubberNode) return;
-    const x0 = Math.min(this.origin.x, x);
-    const y0 = Math.min(this.origin.y, y);
-    const w = Math.abs(x - this.origin.x);
-    const h = Math.abs(y - this.origin.y);
-    this.rubberNode.setAttribute('x', String(x0));
-    this.rubberNode.setAttribute('y', String(y0));
-    this.rubberNode.setAttribute('width', String(w));
-    this.rubberNode.setAttribute('height', String(h));
-  };
-
-  /*
-  private onLinkMouseEnter = (linkView: dia.LinkView, evt: dia.Event) => {};
-*/
-
-  /*
-  private onBlankMouseOver = (evt: dia.Event) => {};
-*/
-
-  /*  private onGraphUpdate = (cell: dia.Cell, opt: dia.Cell.Options) => {
-
-  };*/
-  private onGraphRemove = (cell: dia.Cell) => {
-    this.removeFromSelection(cell.id);
-  };
 }
