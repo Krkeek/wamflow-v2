@@ -1,5 +1,6 @@
-import { Component, HostListener, signal } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { UnsavedChangesService } from './core/services/UnsavedChangesService';
 
 @Component({
   selector: 'app-root',
@@ -8,11 +9,13 @@ import { RouterOutlet } from '@angular/router';
   styleUrl: './app.css',
 })
 export class App {
-  protected readonly title = signal('Angular');
+  private readonly unsavedChangesService = inject(UnsavedChangesService);
 
   @HostListener('window:beforeunload', ['$event'])
-  showMessage($event: Event) {
-    $event.preventDefault();
-    return confirm();
+  handleBeforeUnload(event: BeforeUnloadEvent) {
+    if (this.unsavedChangesService.hasPendingChanges()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
   }
 }
