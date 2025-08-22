@@ -1,5 +1,5 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
-import { dia, elementTools, shapes } from '@joint/core';
+import { dia, elementTools, g, shapes } from '@joint/core';
 import { WamElements } from '../enums/WamElements';
 import { ElementCreatorService } from './elementCreatorService';
 import { JOINT_CONSTRAINTS } from '../constants/JointConstraints';
@@ -13,7 +13,7 @@ import CellView = dia.CellView;
   providedIn: 'root',
 })
 export class JointService implements OnDestroy {
-  public selectedCell$ = new BehaviorSubject<ID | null>(null);
+  public selectedCells$ = new BehaviorSubject<ID[]>([]);
   private graph?: dia.Graph;
   private paper?: dia.Paper;
   private paperDimensions = {
@@ -22,17 +22,33 @@ export class JointService implements OnDestroy {
   };
   private readonly elementCreatorService = inject(ElementCreatorService);
 
-  constructor() {
-    this.selectedCell$.pipe(distinctUntilChanged(), pairwise()).subscribe(([prevId, currentId]) => {
-      const prevCell = prevId ? this.graph?.getCell(prevId) : null;
-      if (prevCell && prevId) this.clearSelection(prevId);
+  private origin: dia.Point | null = null;
+  private rubberNode: SVGRectElement | null = null;
 
-      if (currentId) {
-        this.highlightCell(currentId);
-      } else {
-        return;
-      }
-    });
+  constructor() {
+    this.selectedCells$
+      .pipe(
+        distinctUntilChanged((a, b) => this.arraysEqual(a, b)),
+        pairwise(),
+      )
+      .subscribe(([prevIds, currIds]) => {
+        const prevSet = new Set(prevIds);
+        const currSet = new Set(currIds);
+
+        // unhighlight IDs that were removed
+        for (const id of prevIds) {
+          if (!currSet.has(id)) this.clearSelection(id);
+        }
+
+        // highlight IDs that were added
+        for (const id of currIds) {
+          if (!prevSet.has(id)) {
+            this.highlightCell(id);
+            const view = this.getCellView(id);
+            if (view && this.toolsView) view.addTools(this.toolsView);
+          }
+        }
+      });
   }
 
   private _toolsView?: ToolsView;
@@ -178,6 +194,9 @@ export class JointService implements OnDestroy {
     this.paper.off('link:pointerdown');
     this.paper.off('link:pointerup');
     this.paper.off('blank:pointerclick');
+    this.paper.off('blank:pointerdown');
+    this.paper.off('blank:pointerup');
+    this.paper.off('blank:pointermove');
     this.paper.off('link:mouseenter');
     this.paper.off('blank:mouseover');
     this.graph.off('change add');
@@ -195,7 +214,33 @@ export class JointService implements OnDestroy {
     const { width, height } = el.size();
     el.position(x - width / 2, y - height / 2);
     el.addTo(this.graph);
-    this.selectedCell$.next(el.id);
+    this.addToSelection(el.id);
+  }
+
+  public setSelection(ids: ID[]) {
+    this.selectedCells$.next([...ids]);
+  }
+
+  public clearAllSelection() {
+    this.selectedCells$.next([]);
+  }
+
+  public addToSelection(id: ID) {
+    const next = new Set(this.selectedCells$.value);
+    next.add(id);
+    this.selectedCells$.next([...next]);
+  }
+
+  public removeFromSelection(id: ID) {
+    const next = new Set(this.selectedCells$.value);
+    next.delete(id);
+    this.selectedCells$.next([...next]);
+  }
+
+  private arraysEqual(a: ID[], b: ID[]) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
   }
 
   private getCellView(cellId: ID): CellView {
@@ -234,13 +279,16 @@ export class JointService implements OnDestroy {
     this.paper.on('link:pointerup', this.onLinkPointerUp);
     this.paper.on('link:mouseenter', this.onLinkMouseEnter);
     this.paper.on('blank:pointerclick', this.onBlankPointerClick);
+    this.paper.on('blank:pointerdown', this.onBlankPointerDown);
+    this.paper.on('blank:pointerup', this.onBlankPointerUp);
+    this.paper.on('blank:pointermove', this.onBlankPointerMove);
     this.paper.on('blank:mouseover', this.onBlankMouseOver);
     this.graph.on('change add', this.onGraphUpdate);
     this.graph.on('remove', this.onGraphRemove);
   }
 
   private onElementPointerDown = (elementView: dia.ElementView, evt: dia.Event) => {
-    this.selectedCell$.next(elementView.model.id);
+    this.addToSelection(elementView.model.id);
   };
 
   private onLinkPointerDown = (linkView: dia.LinkView, evt: dia.Event) => {
@@ -252,8 +300,8 @@ export class JointService implements OnDestroy {
   private onElementMouseLeave = (elementView: dia.ElementView) => {};
 
   private onElementContextMenu = (elementView: dia.ElementView, evt: dia.Event) => {
-    if (elementView.model.id != this.selectedCell$.value) {
-      this.selectedCell$.next(elementView.model.id);
+    if (!this.selectedCells$.value.find((id) => id == elementView.model.id)) {
+      this.addToSelection(elementView.model.id);
     }
     const cellView = this.getCellView(elementView.model.id);
     cellView.addTools(this.toolsView);
@@ -265,7 +313,61 @@ export class JointService implements OnDestroy {
   };
 
   private onBlankPointerClick = (evt: dia.Event, x: number, y: number) => {
-    this.selectedCell$.next(null);
+    this.clearAllSelection();
+  };
+  private onBlankPointerDown = (_evt: dia.Event, x: number, y: number) => {
+    // start a fresh selection
+    this.clearAllSelection();
+
+    this.origin = { x, y };
+
+    // create the overlay rect inside the paper's <svg>
+    const svg = this.paper?.svg as SVGSVGElement | undefined;
+    if (!svg) return;
+
+    const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    r.setAttribute('x', String(x));
+    r.setAttribute('y', String(y));
+    r.setAttribute('width', '1');
+    r.setAttribute('height', '1');
+    r.setAttribute('fill', 'rgba(30,144,255,0.12)');
+    r.setAttribute('stroke', '#1e90ff');
+    r.setAttribute('stroke-dasharray', '4,2');
+    r.setAttribute('pointer-events', 'none'); // don't steal mouse
+    svg.appendChild(r);
+
+    this.rubberNode = r;
+  };
+
+  private onBlankPointerUp = (_evt: dia.Event, x: number, y: number) => {
+    if (!this.origin) return;
+
+    const x0 = Math.min(this.origin.x, x);
+    const y0 = Math.min(this.origin.y, y);
+    const w = Math.abs(x - this.origin.x);
+    const h = Math.abs(y - this.origin.y);
+    const area = new g.Rect(x0, y0, w, h);
+
+    const views = this.paper?.findElementViewsInArea(area) ?? [];
+    const ids: ID[] = views.filter((v) => v.model.isElement()).map((v) => String(v.model.id));
+    this.setSelection(ids);
+    if (this.rubberNode) {
+      this.rubberNode.parentNode?.removeChild(this.rubberNode);
+      this.rubberNode = null;
+    }
+    this.origin = null;
+  };
+
+  private onBlankPointerMove = (_evt: dia.Event, x: number, y: number) => {
+    if (!this.origin || !this.rubberNode) return;
+    const x0 = Math.min(this.origin.x, x);
+    const y0 = Math.min(this.origin.y, y);
+    const w = Math.abs(x - this.origin.x);
+    const h = Math.abs(y - this.origin.y);
+    this.rubberNode.setAttribute('x', String(x0));
+    this.rubberNode.setAttribute('y', String(y0));
+    this.rubberNode.setAttribute('width', String(w));
+    this.rubberNode.setAttribute('height', String(h));
   };
 
   private onLinkMouseEnter = (linkView: dia.LinkView, evt: dia.Event) => {
@@ -279,6 +381,6 @@ export class JointService implements OnDestroy {
     // TODO: sync model, trigger save, update UI
   };
   private onGraphRemove = (cell: dia.Cell, opt: dia.Cell.Options) => {
-    this.selectedCell$.next(null);
+    this.removeFromSelection(cell.id);
   };
 }
