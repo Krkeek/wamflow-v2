@@ -1,13 +1,19 @@
 import { WamElements } from '../enums/WamElements';
 import { JOINT_CONSTRAINTS } from './JointConstraints';
+import { dia } from '@joint/core';
 
 export const WAM_ELEMENTS_DATA: Record<
   WamElements,
   {
     size: { width: number; height: number };
-    attrs?: any;
-    ports?: any;
-    markup?: any;
+    attrs?: dia.Element.Attributes;
+    ports?:
+      | {
+          groups?: Record<string, dia.Element.PortGroup>;
+          items?: dia.Element.Port[];
+        }
+      | undefined;
+    markup?: dia.Element.Attributes['markup'];
   }
 > = {
   [WamElements.Application]: {

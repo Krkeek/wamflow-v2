@@ -30,36 +30,8 @@ module.exports = tseslint.config(
           style: 'kebab-case',
         },
       ],
-      '@typescript-eslint/member-ordering': [
-        'warn',
-        {
-          default: {
-            memberTypes: [
-              // fields
-              'public-static-field',
-              'protected-static-field',
-              'private-static-field',
-              'public-instance-field',
-              'protected-instance-field',
-              'private-instance-field',
-
-              // constructors
-              'public-constructor',
-              'protected-constructor',
-              'private-constructor',
-
-              // methods
-              'public-static-method',
-              'protected-static-method',
-              'private-static-method',
-              'public-instance-method',
-              'protected-instance-method',
-              'private-instance-method',
-            ],
-            order: 'as-written',
-          },
-        },
-      ],
+      'no-empty-function': ['warn'],
+      '@typescript-eslint/no-unused-vars': 'warn',
     },
   },
 

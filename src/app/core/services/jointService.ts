@@ -13,6 +13,7 @@ import { ResizeControl } from '../Infrastructure/ResizeControl';
   providedIn: 'root',
 })
 export class JointService implements OnDestroy {
+  public selectedCell$ = new BehaviorSubject<ID | null>(null);
   private graph?: dia.Graph;
   private paper?: dia.Paper;
   private paperDimensions = {
@@ -20,16 +21,6 @@ export class JointService implements OnDestroy {
     height: JOINT_CONSTRAINTS.paperDefaultDimensions.height,
   };
   private readonly elementCreatorService = inject(ElementCreatorService);
-  private _toolsView?: ToolsView;
-
-  public get toolsView(): ToolsView {
-    if (!this._toolsView) {
-      throw new Error('No tools view found.');
-    }
-    return this._toolsView;
-  }
-
-  public selectedCell$ = new BehaviorSubject<ID | null>(null);
 
   constructor() {
     this.selectedCell$.pipe(distinctUntilChanged(), pairwise()).subscribe(([prevId, currentId]) => {
@@ -44,10 +35,13 @@ export class JointService implements OnDestroy {
     });
   }
 
-  private getCellView(cellId: ID): CellView {
-    const cell = this.getCellById(cellId);
-    if (!this.paper) throw new Error('No paper found.');
-    return cell.findView(this.paper);
+  private _toolsView?: ToolsView;
+
+  public get toolsView(): ToolsView {
+    if (!this._toolsView) {
+      throw new Error('No tools view found.');
+    }
+    return this._toolsView;
   }
 
   public initPaper(canvas: ElementRef<HTMLElement>): void {
@@ -73,20 +67,6 @@ export class JointService implements OnDestroy {
     });
     this.initToolTips();
     this.bindPaperEvents();
-  }
-
-  private initGraph(): dia.Graph | void {
-    this.graph = new dia.Graph({}, { cellNamespace: shapes });
-  }
-
-  private initToolTips(): void {
-    const boundaryTool = new elementTools.Boundary();
-    const removeButton = new elementTools.Remove();
-    const resizeButton = new ResizeControl();
-
-    this._toolsView = new dia.ToolsView({
-      tools: [boundaryTool, removeButton, resizeButton],
-    });
   }
 
   public removeCell(cellId: string): void {}
@@ -144,11 +124,13 @@ export class JointService implements OnDestroy {
     return [];
   }
 
-  public updateCellAttributes(cellId: string, attrs: any): void {}
+  public updateCellAttributes(cellId: string, attrs: dia.Cell.Attributes): void {}
 
-  public updateAttributeByName(cellId: string, attrName: string, value: any): void {}
+  public updateAttributeByName(cellId: string, attrName: string, value: string): void {}
 
-  public getAttributeByCellId(cellId: string, attrName: string): any {}
+  public getAttributeByCellId(cellId: string, attrName: string): string {
+    return '';
+  }
 
   public setPaperDimensions(width: number, height: number): void {
     if (width < 4000 || height < 4000)
@@ -157,6 +139,41 @@ export class JointService implements OnDestroy {
   }
 
   public setCellDimensions(width: number, height: number): void {}
+
+  public ngOnDestroy(): void {
+    if (!this.paper || !this.graph) throw new Error('No paper or graph found.');
+
+    this.paper.off('element:pointerdown');
+    this.paper.off('element:mouseover');
+    this.paper.off('element:mouseleave');
+    this.paper.off('link:pointerdown');
+    this.paper.off('link:pointerup');
+    this.paper.off('blank:pointerclick');
+    this.paper.off('link:mouseenter');
+    this.paper.off('blank:mouseover');
+    this.graph.off('change add');
+    this.graph.off('remove');
+  }
+
+  private getCellView(cellId: ID): CellView {
+    const cell = this.getCellById(cellId);
+    if (!this.paper) throw new Error('No paper found.');
+    return cell.findView(this.paper);
+  }
+
+  private initGraph(): dia.Graph | void {
+    this.graph = new dia.Graph({}, { cellNamespace: shapes });
+  }
+
+  private initToolTips(): void {
+    const boundaryTool = new elementTools.Boundary();
+    const removeButton = new elementTools.Remove();
+    const resizeButton = new ResizeControl();
+
+    this._toolsView = new dia.ToolsView({
+      tools: [boundaryTool, removeButton, resizeButton],
+    });
+  }
 
   private bindPaperEvents(): void {
     if (!this.paper || !this.graph) throw new Error('No paper or graph found.');
@@ -173,21 +190,6 @@ export class JointService implements OnDestroy {
     this.paper.on('blank:mouseover', this.onBlankMouseOver);
     this.graph.on('change add', this.onGraphUpdate);
     this.graph.on('remove', this.onGraphRemove);
-  }
-
-  public ngOnDestroy(): void {
-    if (!this.paper || !this.graph) throw new Error('No paper or graph found.');
-
-    this.paper.off('element:pointerdown');
-    this.paper.off('element:mouseover');
-    this.paper.off('element:mouseleave');
-    this.paper.off('link:pointerdown');
-    this.paper.off('link:pointerup');
-    this.paper.off('blank:pointerclick');
-    this.paper.off('link:mouseenter');
-    this.paper.off('blank:mouseover');
-    this.graph.off('change add');
-    this.graph.off('remove');
   }
 
   private onElementPointerDown = (elementView: dia.ElementView, evt: dia.Event) => {
@@ -226,10 +228,10 @@ export class JointService implements OnDestroy {
 
   private onBlankMouseOver = (evt: dia.Event) => {};
 
-  private onGraphUpdate = (cell: dia.Cell, opt: any) => {
+  private onGraphUpdate = (cell: dia.Cell, opt: dia.Cell.Options) => {
     // TODO: sync model, trigger save, update UI
   };
-  private onGraphRemove = (cell: dia.Cell, opt: any) => {
+  private onGraphRemove = (cell: dia.Cell, opt: dia.Cell.Options) => {
     this.selectedCell$.next(null);
   };
 }

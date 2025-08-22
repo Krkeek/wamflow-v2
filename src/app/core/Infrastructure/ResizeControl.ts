@@ -1,4 +1,4 @@
-import { elementTools } from '@joint/core';
+import { dia, elementTools } from '@joint/core';
 
 export const ResizeControl = elementTools.Control.extend({
   children: [
@@ -15,13 +15,13 @@ export const ResizeControl = elementTools.Control.extend({
     },
   ],
 
-  getPosition: function (view: any) {
+  getPosition: function (view: dia.ElementView) {
     const model = view.model;
     const { width, height } = model.size();
     return { x: width, y: height }; // bottom-right corner
   },
 
-  setPosition(view: any, coordinates: any) {
+  setPosition(view: dia.ElementView, coordinates: { x: number; y: number }) {
     const model = view.model;
 
     const { width: w0, height: h0 } = model.size();
