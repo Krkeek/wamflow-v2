@@ -44,8 +44,14 @@ export class JointService implements OnDestroy {
         this.updateMultiSelectionBox(currIds);
 
         for (const id of prevIds) {
-          if (!currSet.has(id)) this.unhighlightCell(id);
+          if (!currSet.has(id)) {
+            const cell = this._graph?.getCell(id);
+            if (cell) {
+              this.unhighlightCell(id);
+            }
+          }
         }
+
         for (const id of currIds) {
           if (!prevSet.has(id)) {
             this.highlightCell(id);
@@ -451,8 +457,7 @@ export class JointService implements OnDestroy {
       this._multiBoxDeleteButton.addEventListener('touchstart', consume, { passive: false });
 
       this._multiBoxDeleteButton.addEventListener('click', () => {
-        console.log('clicked');
-        this.removeCells(selectedIds);
+        this.removeCells(this.selectedCells$.value);
         this.removeMultiSelectionBox();
       });
 
