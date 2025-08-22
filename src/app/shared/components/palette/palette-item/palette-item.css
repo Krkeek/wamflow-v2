@@ -1,0 +1,13 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.canvas-container {
+  cursor: move;
+}
+
+.canvas  {
+  pointer-events: none !important;
+}

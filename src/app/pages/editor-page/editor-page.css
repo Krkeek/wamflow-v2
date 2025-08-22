@@ -21,21 +21,24 @@
   width: 10%;
   display: flex !important;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .middle {
   background-color: var(--ancientTwo-color);
-  width: 75%;
+  width: 70%;
   height: 98%;
+  border-radius: var(--defaultBorderRadius);
 }
 .sheet {
   height: 96%;
   overflow: scroll;
+  border-radius: var(--defaultBorderRadius);
+
 }
 
 .right-side {
-  width: 25%;
+  width: 20%;
   display: flex;
   align-items: center;
   flex-direction: column;
@@ -47,11 +50,9 @@
   height: 4%;
   color: var(--textTwo-color);
   font-size: 0.9rem;
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
-}
-.canvas {
+  border-radius: var(--defaultBorderRadius);
+
 }

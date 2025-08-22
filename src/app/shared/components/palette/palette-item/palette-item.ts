@@ -1,0 +1,39 @@
+import { AfterViewInit, Component, ElementRef, inject, input, ViewChild } from '@angular/core';
+import { WamElements } from '../../../../core/enums/WamElements';
+import { JointService } from '../../../../core/services/jointService';
+
+@Component({
+  selector: 'app-palette-item',
+  imports: [],
+  templateUrl: './palette-item.html',
+  styleUrl: './palette-item.css',
+})
+export class PaletteItem implements AfterViewInit {
+  @ViewChild('canvas') canvas?: ElementRef<HTMLElement>;
+
+  public element = input.required<WamElements>();
+  private readonly jointService = inject(JointService);
+
+  ngAfterViewInit() {
+    if (this.canvas && this.canvas.nativeElement) {
+      const { graph, paper } = this.jointService.initPalettePaper(this.canvas.nativeElement);
+      this.jointService.addCell(this.element(), graph, paper);
+    } else {
+      throw new Error('Canvas not initialized');
+    }
+  }
+
+  onDragStart(e: DragEvent) {
+    if (e.dataTransfer == null) {
+      throw new Error('e.transfer is null');
+    }
+    const element = this.element();
+    e.dataTransfer.setData('elementToDrag', String(element));
+    e.dataTransfer.effectAllowed = 'copy';
+
+    if (e.dataTransfer && this.canvas) {
+      const rect = this.canvas.nativeElement.getBoundingClientRect();
+      e.dataTransfer.setDragImage(this.canvas.nativeElement, rect.width / 2, rect.height / 2);
+    }
+  }
+}

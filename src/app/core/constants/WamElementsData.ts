@@ -135,6 +135,7 @@ export const WAM_ELEMENTS_DATA: Record<
       { tagName: 'text', selector: 'label' },
     ],
   },
+  /*
   [WamElements.DataProvider]: {
     size: { width: 200, height: 200 },
     attrs: {
@@ -177,11 +178,29 @@ export const WAM_ELEMENTS_DATA: Record<
       },
     ],
   },
-  [WamElements.SecurityRealm]: {
-    size: { width: 120, height: 80 },
+*/
+  [WamElements.DataProvider]: {
+    size: { width: 70, height: 70 },
     attrs: {
-      body: { fill: JOINT_CONSTRAINTS.defaultFill, stroke: JOINT_CONSTRAINTS.defaultStroke },
-      label: { text: 'SecurityRealm' },
+      body: {
+        refWidth: '100%',
+        refHeight: '100%',
+        rx: 10,
+        ry: 10,
+        fill: JOINT_CONSTRAINTS.defaultFill,
+        stroke: JOINT_CONSTRAINTS.defaultStroke,
+        strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
+        cursor: 'move',
+      },
+      labelOne: {
+        text: '',
+        refX: '50%',
+        refY: '50%',
+        textAnchor: 'middle',
+        textVerticalAnchor: 'middle',
+        fontSize: 12,
+        fill: JOINT_CONSTRAINTS.textColor,
+      },
     },
     markup: [
       {
@@ -190,7 +209,42 @@ export const WAM_ELEMENTS_DATA: Record<
       },
       {
         tagName: 'text',
-        selector: 'label',
+        selector: 'labelOne',
+      },
+    ],
+  },
+
+  [WamElements.SecurityRealm]: {
+    size: { width: 70, height: 70 },
+    attrs: {
+      body: {
+        refWidth: '100%',
+        refHeight: '100%',
+        rx: 10,
+        ry: 10,
+        fill: JOINT_CONSTRAINTS.defaultFill,
+        stroke: JOINT_CONSTRAINTS.defaultStroke,
+        strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
+        cursor: 'move',
+      },
+      labelOne: {
+        text: '',
+        refX: '50%',
+        refY: '50%',
+        textAnchor: 'middle',
+        textVerticalAnchor: 'middle',
+        fontSize: 12,
+        fill: JOINT_CONSTRAINTS.textColor,
+      },
+    },
+    markup: [
+      {
+        tagName: 'rect',
+        selector: 'body',
+      },
+      {
+        tagName: 'text',
+        selector: 'labelOne',
       },
     ],
   },

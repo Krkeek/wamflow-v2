@@ -1,13 +1,13 @@
-import { ElementRef, inject, Injectable, OnDestroy } from '@angular/core';
+import { inject, Injectable, OnDestroy } from '@angular/core';
 import { dia, elementTools, shapes } from '@joint/core';
 import { WamElements } from '../enums/WamElements';
 import { ElementCreatorService } from './elementCreatorService';
 import { JOINT_CONSTRAINTS } from '../constants/JointConstraints';
-import ToolsView = dia.ToolsView;
 import { BehaviorSubject, distinctUntilChanged, pairwise } from 'rxjs';
+import { ResizeControl } from '../Infrastructure/ResizeControl';
+import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
 import CellView = dia.CellView;
-import { ResizeControl } from '../Infrastructure/ResizeControl';
 
 @Injectable({
   providedIn: 'root',
@@ -44,10 +44,10 @@ export class JointService implements OnDestroy {
     return this._toolsView;
   }
 
-  public initPaper(canvas: ElementRef<HTMLElement>): void {
+  public initPaper(canvas: HTMLElement): void {
     this.initGraph();
     this.paper = new dia.Paper({
-      el: canvas.nativeElement,
+      el: canvas,
       model: this.graph,
       height: this.paperDimensions.height + 'px',
       width: this.paperDimensions.width + 'px',
@@ -69,12 +69,41 @@ export class JointService implements OnDestroy {
     this.bindPaperEvents();
   }
 
+  public initPalettePaper(canvas: HTMLElement): {
+    graph: dia.Graph;
+    paper: dia.Paper;
+  } {
+    const graph = this.getPaletteItemGraph();
+
+    const paper = new dia.Paper({
+      el: canvas,
+      model: graph,
+      interactive: false,
+      cellViewNamespace: shapes,
+
+      width: 90,
+      height: 90,
+    });
+    return { graph, paper };
+  }
+
   public removeCell(cellId: string): void {}
 
-  public addCell(cell: WamElements): void {
+  public addCell(cell: WamElements, specificGraph?: dia.Graph, specificPaper?: dia.Paper): void {
     const newCell = this.elementCreatorService.create(cell);
-    if (this.graph) {
-      newCell.addTo(this.graph);
+
+    if (specificGraph) {
+      newCell.position(20, 10);
+      newCell.addTo(specificGraph);
+      specificPaper?.fitToContent({
+        allowNewOrigin: 'any',
+        allowNegativeBottomRight: false,
+        padding: 5,
+      });
+    } else {
+      if (this.graph) {
+        newCell.addTo(this.graph);
+      }
     }
   }
 
@@ -155,6 +184,20 @@ export class JointService implements OnDestroy {
     this.graph.off('remove');
   }
 
+  public clientToLocal(clientX: number, clientY: number) {
+    if (!this.paper) return { x: 0, y: 0 };
+    return this.paper.clientToLocalPoint({ x: clientX, y: clientY });
+  }
+
+  public addCellAt(cell: WamElements, x: number, y: number) {
+    if (!this.graph) return;
+    const el = this.elementCreatorService.create(cell);
+    const { width, height } = el.size();
+    el.position(x - width / 2, y - height / 2);
+    el.addTo(this.graph);
+    this.selectedCell$.next(el.id);
+  }
+
   private getCellView(cellId: ID): CellView {
     const cell = this.getCellById(cellId);
     if (!this.paper) throw new Error('No paper found.');
@@ -163,6 +206,10 @@ export class JointService implements OnDestroy {
 
   private initGraph(): dia.Graph | void {
     this.graph = new dia.Graph({}, { cellNamespace: shapes });
+  }
+
+  private getPaletteItemGraph(): dia.Graph {
+    return new dia.Graph({}, { cellNamespace: shapes });
   }
 
   private initToolTips(): void {

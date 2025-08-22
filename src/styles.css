@@ -24,9 +24,7 @@
   --defaultText-color: black;
   --defaultTextButton-color: white;
   --textTwo-color: #808080;
-
-
-
+  --defaultBorderRadius: 15px;
 }
 
 html,body{

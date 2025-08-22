@@ -14,7 +14,6 @@ export class ElementCreatorService {
       size: { width: def.size.width, height: def.size.height },
       attrs: def.attrs,
       ports: def.ports,
-      position: { x: 100, y: 100 },
       markup: def.markup,
     });
   }
