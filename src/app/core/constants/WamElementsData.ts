@@ -13,6 +13,7 @@ export const WAM_ELEMENTS_DATA: Record<
           items?: dia.Element.Port[];
         }
       | undefined;
+
     markup?: dia.Element.Attributes['markup'];
   }
 > = {
