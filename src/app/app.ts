@@ -1,6 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { UnsavedChangesService } from './core/services/UnsavedChangesService';
 
 @Component({
   selector: 'app-root',
@@ -9,8 +8,9 @@ import { UnsavedChangesService } from './core/services/UnsavedChangesService';
   styleUrl: './app.css',
 })
 export class App {
+  /*
   private readonly unsavedChangesService = inject(UnsavedChangesService);
-
+*/
   /*  @HostListener('window:beforeunload', ['$event'])
   handleBeforeUnload(event: BeforeUnloadEvent) {
     if (this.unsavedChangesService.hasPendingChanges()) {
