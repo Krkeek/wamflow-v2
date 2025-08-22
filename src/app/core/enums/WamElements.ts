@@ -1,8 +1,8 @@
 export enum WamElements {
+  SecurityRealm = 'SecurityRealm',
   Application = 'Application',
   Service = 'Service',
-  IdentityProvider = 'IdentityProvider',
   ProcessUnit = 'ProcessUnit',
+  IdentityProvider = 'IdentityProvider',
   DataProvider = 'DataProvider',
-  SecurityRealm = 'SecurityRealm',
 }

@@ -1,5 +1,5 @@
 export const JOINT_CONSTRAINTS = {
-  defaultFill: '#E9ECEF',
+  defaultFill: 'transparent',
   defaultStroke: '#000',
   warningFill: '#FFF3CD',
   infoFill: '#D1ECF1',

@@ -25,7 +25,6 @@
 }
 
 .middle {
-  background-color: var(--ancientTwo-color);
   width: 70%;
   height: 98%;
   border-radius: var(--defaultBorderRadius);
@@ -53,6 +52,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: var(--defaultBorderRadius);
+  border-top-left-radius: var(--defaultBorderRadius);
+  border-top-right-radius: var(--defaultBorderRadius);
 
 }

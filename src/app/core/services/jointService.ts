@@ -63,21 +63,21 @@ export class JointService implements OnDestroy {
     this.paper = new dia.Paper({
       el: canvas,
       model: this.graph,
-      height: this.paperDimensions.height + 'px',
-      width: this.paperDimensions.width + 'px',
-      gridSize: 1,
+      width: this.paperDimensions.width,
+      height: this.paperDimensions.height,
+      gridSize: 10,
+      drawGridSize: 40,
+      drawGrid: {
+        name: 'mesh',
+        args: { color: '#bdbdbd', thickness: 1 },
+      },
       cellViewNamespace: shapes,
-      background: { color: JOINT_CONSTRAINTS.paperBackground },
       linkPinning: false,
       defaultConnectionPoint: { name: 'boundary' },
       restrictTranslate: true,
       embeddingMode: true,
-      highlighting: {
-        embedding: false,
-      },
-      validateConnection: function (cellViewS, _magnetS, cellViewT) {
-        return cellViewS !== cellViewT;
-      },
+      highlighting: { embedding: false },
+      validateConnection: (s, _m, t) => s !== t,
     });
     this.initToolTips();
     this.bindPaperEvents();

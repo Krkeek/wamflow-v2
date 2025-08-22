@@ -213,7 +213,6 @@ export const WAM_ELEMENTS_DATA: Record<
       },
     ],
   },
-
   [WamElements.SecurityRealm]: {
     size: { width: 70, height: 70 },
     attrs: {
