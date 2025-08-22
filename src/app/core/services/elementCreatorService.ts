@@ -10,13 +10,16 @@ export class ElementCreatorService {
   public create(element: WamElements): CustomElement {
     const def = WAM_ELEMENTS_DATA[element];
     if (!def) throw new Error(`Unknown element type: ${element}`);
-    const el = new CustomElement();
-    el.resize(def.size.width, def.size.height);
-    el.attr(def.attrs);
-    if (def.ports) {
-      el.set('ports', def.ports);
-    }
-    el.position(100, 100);
-    return el;
+    return new CustomElement(
+      {
+        size: { width: def.size.width, height: def.size.height },
+        attrs: def.attrs,
+        ports: def.ports,
+        position: { x: 100, y: 100 },
+      },
+      {
+        markup: def.markup,
+      },
+    );
   }
 }

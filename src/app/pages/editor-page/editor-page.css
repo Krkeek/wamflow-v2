@@ -25,8 +25,13 @@
 }
 
 .middle {
+  background-color: var(--ancientTwo-color);
   width: 75%;
-
+  height: 98%;
+}
+.sheet {
+  height: 96%;
+  overflow: scroll;
 }
 
 .right-side {
@@ -39,11 +44,14 @@
 .sheet-title {
   text-align: center;
   background: var(--ancientTwo-color);
-  height: 10%;
-  padding: 1rem 0;
+  height: 4%;
   color: var(--textTwo-color);
   font-size: 0.9rem;
-  box-sizing: border-box;
   border-top-left-radius: 10px;
   border-top-right-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.canvas {
 }

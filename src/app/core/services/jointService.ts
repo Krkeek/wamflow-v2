@@ -1,28 +1,65 @@
-import { ElementRef, inject, Injectable } from '@angular/core';
-import { dia, shapes } from '@joint/core';
+import { ElementRef, inject, Injectable, OnDestroy } from '@angular/core';
+import { dia, elementTools, shapes } from '@joint/core';
 import { WamElements } from '../enums/WamElements';
 import { ElementCreatorService } from './elementCreatorService';
+import { JOINT_CONSTRAINTS } from '../constants/JointConstraints';
+import ToolsView = dia.ToolsView;
+import { BehaviorSubject, distinctUntilChanged, pairwise } from 'rxjs';
+import ID = dia.Cell.ID;
+import CellView = dia.CellView;
+import { ResizeControl } from '../Infrastructure/ResizeControl';
 
 @Injectable({
   providedIn: 'root',
 })
-export class JointService {
+export class JointService implements OnDestroy {
   private graph?: dia.Graph;
   private paper?: dia.Paper;
+  private paperDimensions = {
+    width: JOINT_CONSTRAINTS.paperDefaultDimensions.width,
+    height: JOINT_CONSTRAINTS.paperDefaultDimensions.height,
+  };
   private readonly elementCreatorService = inject(ElementCreatorService);
+  private _toolsView?: ToolsView;
 
-  constructor() {}
+  public get toolsView(): ToolsView {
+    if (!this._toolsView) {
+      throw new Error('No tools view found.');
+    }
+    return this._toolsView;
+  }
+
+  public selectedCell$ = new BehaviorSubject<ID | null>(null);
+
+  constructor() {
+    this.selectedCell$.pipe(distinctUntilChanged(), pairwise()).subscribe(([prevId, currentId]) => {
+      const prevCell = prevId ? this.graph?.getCell(prevId) : null;
+      if (prevCell && prevId) this.clearSelection(prevId);
+
+      if (currentId) {
+        this.highlightCell(currentId);
+      } else {
+        return;
+      }
+    });
+  }
+
+  private getCellView(cellId: ID): CellView {
+    const cell = this.getCellById(cellId);
+    if (!this.paper) throw new Error('No paper found.');
+    return cell.findView(this.paper);
+  }
 
   public initPaper(canvas: ElementRef<HTMLElement>): void {
     this.initGraph();
     this.paper = new dia.Paper({
       el: canvas.nativeElement,
       model: this.graph,
-      height: '85%',
-      width: '100%',
+      height: this.paperDimensions.height + 'px',
+      width: this.paperDimensions.width + 'px',
       gridSize: 1,
       cellViewNamespace: shapes,
-      background: { color: '#E9ECEF' },
+      background: { color: JOINT_CONSTRAINTS.paperBackground },
       linkPinning: false,
       defaultConnectionPoint: { name: 'boundary' },
       restrictTranslate: true,
@@ -34,10 +71,22 @@ export class JointService {
         return cellViewS !== cellViewT;
       },
     });
+    this.initToolTips();
+    this.bindPaperEvents();
   }
 
   private initGraph(): dia.Graph | void {
     this.graph = new dia.Graph({}, { cellNamespace: shapes });
+  }
+
+  private initToolTips(): void {
+    const boundaryTool = new elementTools.Boundary();
+    const removeButton = new elementTools.Remove();
+    const resizeButton = new ResizeControl();
+
+    this._toolsView = new dia.ToolsView({
+      tools: [boundaryTool, removeButton, resizeButton],
+    });
   }
 
   public removeCell(cellId: string): void {}
@@ -51,9 +100,31 @@ export class JointService {
 
   public duplicateCell(cellId: string): void {}
 
-  public selectCell(cellId: string): void {}
+  public highlightCell(cellId: ID): void {
+    const cell = this.getCellById(cellId);
+    cell.attr('body/stroke', JOINT_CONSTRAINTS.primaryStroke);
+    cell.attr('path/stroke', JOINT_CONSTRAINTS.primaryStroke);
+    cell.attr('top/stroke', JOINT_CONSTRAINTS.primaryStroke);
+  }
 
-  public clearSelection(): void {}
+  public unhighlightCell(cellId: ID): void {
+    const cell = this.getCellById(cellId);
+    cell.attr('body/stroke', JOINT_CONSTRAINTS.defaultStroke);
+    cell.attr('path/stroke', JOINT_CONSTRAINTS.defaultStroke);
+    cell.attr('top/stroke', JOINT_CONSTRAINTS.defaultStroke);
+  }
+
+  public getCellById(cellId: ID) {
+    const cell = this.graph?.getCell(cellId);
+    if (!cell) throw Error(`Unable to get cell ${cellId}`);
+    return cell;
+  }
+
+  public clearSelection(cellId: ID): void {
+    const cellView = this.getCellView(cellId);
+    cellView.removeTools();
+    this.unhighlightCell(cellId);
+  }
 
   public exportAsJson(): string | void {}
 
@@ -64,10 +135,6 @@ export class JointService {
   public exportAsRdf(): void {}
 
   public resetPaperDefaultSettings(): void {}
-
-  public findCellById(cellId: string): dia.Cell | null {
-    return null;
-  }
 
   public getAllElements(): dia.Element[] {
     return [];
@@ -82,4 +149,87 @@ export class JointService {
   public updateAttributeByName(cellId: string, attrName: string, value: any): void {}
 
   public getAttributeByCellId(cellId: string, attrName: string): any {}
+
+  public setPaperDimensions(width: number, height: number): void {
+    if (width < 4000 || height < 4000)
+      throw new Error('Paper Dimensions must be greater than 4000px');
+    this.paper?.setDimensions(width, height);
+  }
+
+  public setCellDimensions(width: number, height: number): void {}
+
+  private bindPaperEvents(): void {
+    if (!this.paper || !this.graph) throw new Error('No paper or graph found.');
+
+    // attach
+    this.paper.on('element:pointerdown', this.onElementPointerDown);
+    this.paper.on('element:mouseover', this.onElementMouseOver);
+    this.paper.on('element:mouseleave', this.onElementMouseLeave);
+    this.paper.on('element:contextmenu', this.onElementContextMenu);
+    this.paper.on('link:pointerdown', this.onLinkPointerDown);
+    this.paper.on('link:pointerup', this.onLinkPointerUp);
+    this.paper.on('link:mouseenter', this.onLinkMouseEnter);
+    this.paper.on('blank:pointerclick', this.onBlankPointerClick);
+    this.paper.on('blank:mouseover', this.onBlankMouseOver);
+    this.graph.on('change add', this.onGraphUpdate);
+    this.graph.on('remove', this.onGraphRemove);
+  }
+
+  public ngOnDestroy(): void {
+    if (!this.paper || !this.graph) throw new Error('No paper or graph found.');
+
+    this.paper.off('element:pointerdown');
+    this.paper.off('element:mouseover');
+    this.paper.off('element:mouseleave');
+    this.paper.off('link:pointerdown');
+    this.paper.off('link:pointerup');
+    this.paper.off('blank:pointerclick');
+    this.paper.off('link:mouseenter');
+    this.paper.off('blank:mouseover');
+    this.graph.off('change add');
+    this.graph.off('remove');
+  }
+
+  private onElementPointerDown = (elementView: dia.ElementView, evt: dia.Event) => {
+    this.selectedCell$.next(elementView.model.id);
+  };
+
+  private onLinkPointerDown = (linkView: dia.LinkView, evt: dia.Event) => {
+    console.log('[Joint] link:pointerdown', { id: linkView.model.id, evt });
+    // TODO: select link, show tools
+  };
+  private onElementMouseOver = (elementView: dia.ElementView) => {};
+
+  private onElementMouseLeave = (elementView: dia.ElementView) => {};
+
+  private onElementContextMenu = (elementView: dia.ElementView, evt: dia.Event) => {
+    if (elementView.model.id != this.selectedCell$.value) {
+      this.selectedCell$.next(elementView.model.id);
+    }
+    const cellView = this.getCellView(elementView.model.id);
+    cellView.addTools(this.toolsView);
+  };
+
+  private onLinkPointerUp = (linkView: dia.LinkView, evt: dia.Event) => {
+    console.log('[Joint] link:pointerup', { id: linkView.model.id, evt });
+    // TODO: handle finishing link creation or releasing
+  };
+
+  private onBlankPointerClick = (evt: dia.Event, x: number, y: number) => {
+    this.selectedCell$.next(null);
+  };
+
+  private onLinkMouseEnter = (linkView: dia.LinkView, evt: dia.Event) => {
+    console.log('[Joint] link:mouseenter', { id: linkView.model.id, evt });
+    // TODO: maybe show hover tools, highlight link
+  };
+
+  private onBlankMouseOver = (evt: dia.Event) => {};
+
+  private onGraphUpdate = (cell: dia.Cell, opt: any) => {
+    // TODO: sync model, trigger save, update UI
+  };
+  private onGraphRemove = (cell: dia.Cell, opt: any) => {
+    this.selectedCell$.next(null);
+  };
 }

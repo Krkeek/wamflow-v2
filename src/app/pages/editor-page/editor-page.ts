@@ -23,7 +23,5 @@ export class EditorPage implements AfterViewInit {
     this.jointService.addCell(WamElements.Service);
     this.jointService.addCell(WamElements.IdentityProvider);
     this.jointService.addCell(WamElements.ProcessUnit);
-    this.jointService.addCell(WamElements.DataProvider);
-    this.jointService.addCell(WamElements.SecurityRealm);
   }
 }
