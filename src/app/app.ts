@@ -1,4 +1,4 @@
-import { Component, HostListener, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { UnsavedChangesService } from './core/services/UnsavedChangesService';
 
@@ -11,11 +11,11 @@ import { UnsavedChangesService } from './core/services/UnsavedChangesService';
 export class App {
   private readonly unsavedChangesService = inject(UnsavedChangesService);
 
-  @HostListener('window:beforeunload', ['$event'])
+  /*  @HostListener('window:beforeunload', ['$event'])
   handleBeforeUnload(event: BeforeUnloadEvent) {
     if (this.unsavedChangesService.hasPendingChanges()) {
       event.preventDefault();
       event.returnValue = '';
     }
-  }
+  }*/
 }

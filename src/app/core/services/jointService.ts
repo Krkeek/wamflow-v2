@@ -151,6 +151,11 @@ export class JointService implements OnDestroy {
     return cell;
   }
 
+  public clientToLocal(clientX: number, clientY: number) {
+    if (!this._paper) throw new Error('No _paper or _graph found.');
+    return this._paper.clientToLocalPoint({ x: clientX, y: clientY });
+  }
+
   public ngOnDestroy(): void {
     if (!this._paper || !this._graph) throw new Error('No _paper or _graph found.');
 
@@ -171,11 +176,11 @@ export class JointService implements OnDestroy {
     this._graph.off('remove');
   }
 
-  public clientToLocal(clientX: number, clientY: number) {
-    if (!this._paper) throw new Error('No _paper or _graph found.');
-    return this._paper.clientToLocalPoint({ x: clientX, y: clientY });
-  }
-
+  private removeCells = (idsToRemove: ID[]) => {
+    if (!this._graph) return;
+    const cellsToRemove = this._graph.getCells().filter((cell) => idsToRemove.includes(cell.id));
+    this._graph.removeCells(cellsToRemove);
+  };
   private initGraph(): dia.Graph | void {
     this._graph = new dia.Graph({}, { cellNamespace: shapes });
   }
@@ -245,6 +250,7 @@ export class JointService implements OnDestroy {
       this._multiBoxG.parentNode.removeChild(this._multiBoxG);
     }
     this._multiBoxG = undefined;
+    this._multiBoxDeleteBtn = undefined;
     this._multiBoxRect = undefined;
   }
   private arraysEqual(a: ID[], b: ID[]) {
@@ -356,8 +362,6 @@ export class JointService implements OnDestroy {
       this.removeMultiSelectionBox();
       return;
     }
-
-    // Compute bbox
     const views = selectedIds
       .map((id) => this._graph?.getCell(id))
       .filter((c): c is dia.Element => !!c && c.isElement())
@@ -374,8 +378,6 @@ export class JointService implements OnDestroy {
       bbox = bbox.union(views[i].getBBox({ useModelGeometry: true }));
     }
     bbox = bbox.inflate(6);
-
-    // Ensure overlay
     const svg = this._paper.svg as SVGSVGElement;
     const viewportLayer =
       (svg.querySelector('.joint-cells-layer.joint-viewport') as SVGGElement) ??
@@ -391,26 +393,41 @@ export class JointService implements OnDestroy {
       this._multiBoxRect.setAttribute('stroke-width', '1.5');
       this._multiBoxRect.setAttribute('stroke-dasharray', '6,4');
       this._multiBoxRect.setAttribute('vector-effect', 'non-scaling-stroke');
-      this._multiBoxRect.setAttribute('pointer-events', 'none'); // let events pass through
+      this._multiBoxRect.setAttribute('pointer-events', 'none');
 
-      // DELETE BUTTON ("X")
-      this._multiBoxDeleteBtn = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      this._multiBoxDeleteBtn.textContent = '✕';
-      this._multiBoxDeleteBtn.setAttribute('fill', 'red');
-      this._multiBoxDeleteBtn.setAttribute('font-size', '14');
-      this._multiBoxDeleteBtn.setAttribute('cursor', 'pointer');
+      // Create "delete button" as a circle + white X
+      const btnGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
-      // Click handler: delete all selected cells
-      this._multiBoxDeleteBtn.addEventListener('click', () => {
-        if (!this._graph) return;
-        const ids = this.selectedCells$.value ?? [];
-        ids.forEach((id) => this._graph?.getCell(id)?.remove());
-        this.selectedCells$.next([]);
+      // red circle background
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('r', '7');
+      circle.setAttribute('fill', 'red');
+
+      // white X
+      const cross = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      cross.textContent = '✕';
+      cross.setAttribute('fill', 'white');
+      cross.setAttribute('font-size', '8');
+      cross.setAttribute('font-weight', '900');
+      cross.setAttribute('text-anchor', 'middle');
+      cross.setAttribute('dominant-baseline', 'middle');
+      cross.setAttribute('dy', '0.08em');
+      cross.setAttribute('pointer-events', 'none');
+      cross.setAttribute('stroke', 'white');
+      cross.setAttribute('stroke-width', '0.8');
+      cross.setAttribute('paint-order', 'stroke');
+
+      btnGroup.appendChild(circle);
+      btnGroup.appendChild(cross);
+      btnGroup.setAttribute('cursor', 'pointer');
+      btnGroup.addEventListener('click', () => {
+        this.removeCells(selectedIds);
+        this.removeMultiSelectionBox();
       });
-
       this._multiBoxG.appendChild(this._multiBoxRect);
-      this._multiBoxG.appendChild(this._multiBoxDeleteBtn);
+      this._multiBoxG.appendChild(btnGroup);
       viewportLayer.appendChild(this._multiBoxG);
+      btnGroup.setAttribute('transform', `translate(${bbox.x + 10}, ${bbox.y + 10})`);
     }
 
     // Update box
@@ -420,8 +437,8 @@ export class JointService implements OnDestroy {
     this._multiBoxRect!.setAttribute('height', String(bbox.height));
 
     // Position the delete button at top-right
-    this._multiBoxDeleteBtn!.setAttribute('x', String(bbox.x + bbox.width - 6));
-    this._multiBoxDeleteBtn!.setAttribute('y', String(bbox.y - 4));
+    this._multiBoxDeleteBtn!.setAttribute('x', String(bbox.x));
+    this._multiBoxDeleteBtn!.setAttribute('y', String(bbox.y));
   }
 
   private dragCellsAsGroup(view: dia.ElementView, x?: number, y?: number) {
