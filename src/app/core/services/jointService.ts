@@ -30,6 +30,11 @@ export class JointService implements OnDestroy {
   private _multiBoxG?: SVGGElement;
   private _multiBoxRect?: SVGRectElement;
   private _multiBoxDeleteButton?: SVGElement;
+  private _multiBoxResizeButton?: SVGElement;
+  private _groupResizeActive = false;
+  private _groupResizeBase = new Map<ID, { x: number; y: number; w: number; h: number }>();
+  private _groupResizeAnchor: { x: number; y: number } | null = null;
+  private _groupResizeStart: { w: number; h: number } | null = null;
 
   constructor() {
     this.selectedCells$
@@ -99,7 +104,6 @@ export class JointService implements OnDestroy {
       model: graph,
       interactive: false,
       cellViewNamespace: shapes,
-
       width: 90,
       height: 90,
     });
@@ -408,19 +412,26 @@ export class JointService implements OnDestroy {
 
       this._multiBoxRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       this._multiBoxRect.setAttribute('fill', 'none');
-      this._multiBoxRect.setAttribute('stroke', '#1e90ff');
-      this._multiBoxRect.setAttribute('stroke-width', '1.5');
+      this._multiBoxRect.setAttribute('stroke', JOINT_CONSTRAINTS.multiBoxSelectorColor);
+      this._multiBoxRect.setAttribute('stroke-width', JOINT_CONSTRAINTS.multiBoxSelectorThickness);
       this._multiBoxRect.setAttribute('stroke-dasharray', '6,4');
       this._multiBoxRect.setAttribute('vector-effect', 'non-scaling-stroke');
       this._multiBoxRect.setAttribute('pointer-events', 'none');
 
       this._multiBoxDeleteButton = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      this._multiBoxResizeButton = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
       // red circle background
       const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       circle.setAttribute('r', '7');
       circle.setAttribute('fill', 'red');
       circle.setAttribute('pointer-events', 'none');
+
+      // blue circle background
+      const circleTwo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circleTwo.setAttribute('r', '7');
+      circleTwo.setAttribute('fill', 'black');
+      circleTwo.setAttribute('pointer-events', 'none');
 
       // white X
       const cross = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -440,6 +451,50 @@ export class JointService implements OnDestroy {
       this._multiBoxDeleteButton.appendChild(cross);
       this._multiBoxDeleteButton.setAttribute('cursor', 'pointer');
       this._multiBoxDeleteButton.setAttribute('pointer-events', 'visiblePainted');
+
+      this._multiBoxResizeButton = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      this._multiBoxResizeButton.setAttribute('cursor', 'se-resize');
+      this._multiBoxResizeButton.setAttribute('pointer-events', 'visiblePainted');
+
+      // 1) Visual: little corner "L" (or arrow) — purely visual
+      const corner = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      corner.setAttribute('d', 'M0 12 L12 12 L12 0'); // small L shape
+      corner.setAttribute('fill', 'none');
+      corner.setAttribute('stroke', 'black');
+      corner.setAttribute('stroke-width', '2');
+      corner.setAttribute('pointer-events', 'none'); // visual only
+
+      // 2) Transparent hit area (captures the events)
+      const hitTwo = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      hitTwo.setAttribute('x', String(-10));
+      hitTwo.setAttribute('y', String(-10));
+      hitTwo.setAttribute('width', '24');
+      hitTwo.setAttribute('height', '24');
+      hitTwo.setAttribute('fill', 'transparent');
+      hitTwo.setAttribute('pointer-events', 'all');
+
+      // prevent JointJS from reacting first
+      const eat = (e: Event) => {
+        e.stopPropagation();
+        e.preventDefault();
+      };
+      this._multiBoxResizeButton.addEventListener('mousedown', (e) => {
+        eat(e);
+        this.beginGroupResize(e as MouseEvent);
+      });
+      this._multiBoxResizeButton.addEventListener(
+        'touchstart',
+        (e) => {
+          eat(e);
+          const t = (e as TouchEvent).touches[0];
+          this.beginGroupResize(t);
+        },
+        { passive: false },
+      );
+
+      this._multiBoxResizeButton.appendChild(corner);
+      this._multiBoxResizeButton.appendChild(hitTwo);
+      this._multiBoxG!.appendChild(this._multiBoxResizeButton);
 
       const hit = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       hit.setAttribute('x', String(-8));
@@ -461,16 +516,28 @@ export class JointService implements OnDestroy {
         this.removeMultiSelectionBox();
       });
 
+      this._multiBoxResizeButton.addEventListener('click', () => {
+        console.log('click');
+      });
+
       this._multiBoxDeleteButton.appendChild(circle);
       this._multiBoxDeleteButton.appendChild(cross);
       this._multiBoxDeleteButton.appendChild(hit);
       this._multiBoxG.appendChild(this._multiBoxRect);
       this._multiBoxG.appendChild(this._multiBoxDeleteButton);
+      this._multiBoxG.appendChild(this._multiBoxResizeButton);
       viewportLayer.appendChild(this._multiBoxG);
       this._multiBoxDeleteButton.setAttribute(
         'transform',
         `translate(${bbox.x + 10}, ${bbox.y + 10})`,
       );
+
+      if (this._multiBoxResizeButton) {
+        this._multiBoxResizeButton.setAttribute(
+          'transform',
+          `translate(${bbox.x + bbox.width}, ${bbox.y + bbox.height})`,
+        );
+      }
     }
 
     // Update box
@@ -485,6 +552,13 @@ export class JointService implements OnDestroy {
       this._multiBoxDeleteButton.setAttribute(
         'transform',
         `translate(${bbox.x + pad}, ${bbox.y + pad})`,
+      );
+    }
+    // Reposition the delete button on EVERY update
+    if (this._multiBoxResizeButton) {
+      this._multiBoxResizeButton.setAttribute(
+        'transform',
+        `translate(${bbox.x + bbox.width}, ${bbox.y + bbox.height})`,
       );
     }
   }
@@ -561,6 +635,121 @@ export class JointService implements OnDestroy {
     cellView.addTools(this.toolsView);
   };
 
+  private beginGroupResize(pt: { clientX: number; clientY: number }) {
+    if (!this._paper || !this._graph) return;
+
+    const ids = this.getSelectedIds();
+    if (ids.length < 2) return; // only for multi-select (or allow 1 if you like)
+
+    // Compute current union bbox and anchor (top-left)
+    const views = ids
+      .map((id) => this._graph!.getCell(id))
+      .filter((c): c is dia.Element => !!c && c.isElement())
+      .map((el) => el.findView(this._paper!))
+      .filter((v): v is dia.ElementView => !!v);
+
+    if (!views.length) return;
+
+    let bbox = views[0].getBBox({ useModelGeometry: true });
+    for (let i = 1; i < views.length; i++)
+      bbox = bbox.union(views[i].getBBox({ useModelGeometry: true }));
+
+    this._groupResizeAnchor = { x: bbox.x, y: bbox.y };
+    this._groupResizeStart = { w: Math.max(bbox.width, 1), h: Math.max(bbox.height, 1) };
+
+    // Store base pos & size of each element
+    this._groupResizeBase.clear();
+    for (const id of ids) {
+      const cell = this._graph.getCell(id) as dia.Element | null;
+      if (!cell?.isElement()) continue;
+      const p = cell.position();
+      const s = cell.size();
+      this._groupResizeBase.set(id, { x: p.x, y: p.y, w: s.width, h: s.height });
+    }
+
+    this._groupResizeActive = true;
+
+    // Attach move/up listeners on the document so dragging stays smooth
+    const onMove = (ev: MouseEvent | Touch) => {
+      const { x, y } = this.clientToLocal(ev.clientX, ev.clientY);
+      this.performGroupResize(x, y);
+    };
+    const onMouseMove = (e: MouseEvent) => onMove(e);
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches[0]) onMove(e.touches[0]);
+      e.preventDefault();
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onUp);
+
+      this._groupResizeActive = false;
+      this._groupResizeAnchor = null;
+      this._groupResizeStart = null;
+
+      // Recompute overlay (and ensure no leftover transform)
+      if (this._multiBoxG) this._multiBoxG.removeAttribute('transform');
+      this.updateMultiSelectionBox(this.getSelectedIds());
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onUp, { once: true });
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onUp, { once: true });
+  }
+
+  private performGroupResize(x: number, y: number) {
+    if (
+      !this._groupResizeActive ||
+      !this._groupResizeAnchor ||
+      !this._groupResizeStart ||
+      !this._graph
+    )
+      return;
+
+    const anchor = this._groupResizeAnchor; // top-left fixed corner of the group
+    const start = this._groupResizeStart; // initial bbox size (w,h)
+
+    // Raw scale factors from anchor → pointer
+    const sx = (x - anchor.x) / Math.max(start.w, 1);
+    const sy = (y - anchor.y) / Math.max(start.h, 1);
+
+    // Uniform scale to preserve aspect ratio
+    const sMin = 0.05; // guard against collapsing
+    const s = Math.max(Math.max(sx, sy), sMin); // <-- key line: same factor for X & Y
+
+    this._graph.startBatch('group-resize');
+
+    for (const [id, base] of this._groupResizeBase.entries()) {
+      const cell = this._graph.getCell(id) as dia.Element | null;
+      if (!cell?.isElement()) continue;
+
+      // offset from the anchor in initial geometry
+      const ox = base.x - anchor.x;
+      const oy = base.y - anchor.y;
+
+      // new pos = anchor + scaled offset (keeps anchor fixed)
+      const nx = anchor.x + ox * s;
+      const ny = anchor.y + oy * s;
+
+      // new size = scaled base size (uniform)
+      const minW = 10,
+        minH = 10;
+      const nw = Math.max(base.w * s, minW);
+      const nh = Math.max(base.h * s, minH);
+
+      cell.position(nx, ny);
+      cell.resize(nw, nh);
+    }
+
+    this._graph.stopBatch('group-resize');
+
+    // Recompute overlay each move so the handle sticks to bottom-right
+    this.updateMultiSelectionBox(this.getSelectedIds());
+  }
   /*  private onLinkPointerUp = (linkView: dia.LinkView, evt: dia.Event) => {
 
 };*/
