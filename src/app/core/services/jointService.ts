@@ -22,6 +22,9 @@ export class JointService implements OnDestroy {
   };
   private readonly elementCreatorService = inject(ElementCreatorService);
 
+  private groupDragActive = false;
+  private groupDragStart: { x: number; y: number } | null = null;
+  private groupBasePos = new Map<ID, { x: number; y: number }>();
   private origin: dia.Point | null = null;
   private rubberNode: SVGRectElement | null = null;
 
@@ -101,10 +104,6 @@ export class JointService implements OnDestroy {
     return { graph, paper };
   }
 
-  /*
-  public removeCell(cellId: string): void {}
-*/
-
   public addCell(cell: WamElements, specificGraph?: dia.Graph, specificPaper?: dia.Paper): void {
     const newCell = this.elementCreatorService.create(cell);
 
@@ -124,7 +123,7 @@ export class JointService implements OnDestroy {
   }
 
   /*
-  public duplicateCell(cellId: string): void {}
+  public removeCell(cellId: string): void {}
 */
 
   public highlightCell(cellId: ID): void {
@@ -133,6 +132,10 @@ export class JointService implements OnDestroy {
     cell.attr('path/stroke', JOINT_CONSTRAINTS.primaryStroke);
     cell.attr('top/stroke', JOINT_CONSTRAINTS.primaryStroke);
   }
+
+  /*
+  public duplicateCell(cellId: string): void {}
+*/
 
   public unhighlightCell(cellId: ID): void {
     const cell = this.getCellById(cellId);
@@ -151,6 +154,26 @@ export class JointService implements OnDestroy {
     const cellView = this.getCellView(cellId);
     cellView.removeTools();
     this.unhighlightCell(cellId);
+  }
+
+  public ngOnDestroy(): void {
+    if (!this.paper || !this.graph) throw new Error('No paper or graph found.');
+
+    this.paper.off('element:pointerdown');
+    this.paper.off('element:mouseover');
+    this.paper.off('element:mouseleave');
+    this.paper.off('element:pointermove');
+    this.paper.off('element:pointerup');
+    this.paper.off('link:pointerdown');
+    this.paper.off('link:pointerup');
+    this.paper.off('blank:pointerclick');
+    this.paper.off('blank:pointerdown');
+    this.paper.off('blank:pointerup');
+    this.paper.off('blank:pointermove');
+    this.paper.off('link:mouseenter');
+    this.paper.off('blank:mouseover');
+    this.graph.off('change add');
+    this.graph.off('remove');
   }
 
   /*  public exportAsJson(): string | void {}
@@ -189,24 +212,6 @@ export class JointService implements OnDestroy {
   public setCellDimensions(width: number, height: number): void {}
 */
 
-  public ngOnDestroy(): void {
-    if (!this.paper || !this.graph) throw new Error('No paper or graph found.');
-
-    this.paper.off('element:pointerdown');
-    this.paper.off('element:mouseover');
-    this.paper.off('element:mouseleave');
-    this.paper.off('link:pointerdown');
-    this.paper.off('link:pointerup');
-    this.paper.off('blank:pointerclick');
-    this.paper.off('blank:pointerdown');
-    this.paper.off('blank:pointerup');
-    this.paper.off('blank:pointermove');
-    this.paper.off('link:mouseenter');
-    this.paper.off('blank:mouseover');
-    this.graph.off('change add');
-    this.graph.off('remove');
-  }
-
   public clientToLocal(clientX: number, clientY: number) {
     if (!this.paper) return { x: 0, y: 0 };
     return this.paper.clientToLocalPoint({ x: clientX, y: clientY });
@@ -240,6 +245,10 @@ export class JointService implements OnDestroy {
     const next = new Set(this.selectedCells$.value);
     next.delete(id);
     this.selectedCells$.next([...next]);
+  }
+
+  private getSelectedIds(): ID[] {
+    return this.selectedCells$.value ?? [];
   }
 
   private arraysEqual(a: ID[], b: ID[]) {
@@ -277,6 +286,9 @@ export class JointService implements OnDestroy {
 
     // attach
     this.paper.on('element:pointerdown', this.onElementPointerDown);
+    this.paper.on('element:pointermove', this.onElementPointerMove);
+    this.paper.on('element:pointerup', this.onElementPointerUp);
+
     /*    this.paper.on('element:mouseover', this.onElementMouseOver);
     this.paper.on('element:mouseleave', this.onElementMouseLeave);*/
     this.paper.on('element:contextmenu', this.onElementContextMenu);
@@ -292,9 +304,66 @@ export class JointService implements OnDestroy {
     this.graph.on('remove', this.onGraphRemove);
   }
 
-  private onElementPointerDown = (elementView: dia.ElementView) => {
-    this.clearAllSelection();
-    this.addToSelection(elementView.model.id);
+  private onElementPointerDown = (
+    elementView: dia.ElementView,
+    _evt: dia.Event,
+    x?: number,
+    y?: number,
+  ) => {
+    const ids = this.getSelectedIds();
+    const thisId = String(elementView.model.id);
+
+    if (!ids.includes(thisId)) {
+      this.clearAllSelection();
+      this.addToSelection(elementView.model.id);
+    }
+
+    if (this.getSelectedIds().length < 2) {
+      this.groupDragActive = false;
+      this.groupBasePos.clear();
+      this.groupDragStart = null;
+      return;
+    }
+
+    const startX = x ?? 0;
+    const startY = y ?? 0;
+    this.groupDragStart = { x: startX, y: startY };
+    this.groupBasePos.clear();
+
+    for (const id of this.getSelectedIds()) {
+      const cell = this.graph?.getCell(id);
+      if (cell && cell.isElement()) {
+        const { x: px, y: py } = (cell as dia.Element).position();
+        this.groupBasePos.set(id, { x: px, y: py });
+      }
+    }
+    this.groupDragActive = true;
+  };
+
+  private onElementPointerMove = (
+    view: dia.ElementView,
+    _evt: dia.Event,
+    x?: number,
+    y?: number,
+  ) => {
+    if (!this.groupDragActive || !this.groupDragStart) return;
+
+    const dx = (x ?? 0) - this.groupDragStart.x;
+    const dy = (y ?? 0) - this.groupDragStart.y;
+
+    this.graph?.startBatch('group-move');
+
+    const grabbedId = String(view.model.id);
+    for (const id of this.getSelectedIds()) {
+      if (id === grabbedId) continue;
+      const base = this.groupBasePos.get(id);
+      const cell = this.graph?.getCell(id);
+      if (base && cell && cell.isElement()) {
+        (cell as dia.Element).position(base.x + dx, base.y + dy);
+      }
+    }
+
+    this.graph?.stopBatch('group-move');
   };
 
   private onLinkPointerDown = (linkView: dia.LinkView, evt: dia.Event) => {
@@ -313,6 +382,12 @@ export class JointService implements OnDestroy {
     }
     const cellView = this.getCellView(elementView.model.id);
     cellView.addTools(this.toolsView);
+  };
+
+  private onElementPointerUp = () => {
+    this.groupDragActive = false;
+    this.groupBasePos.clear();
+    this.groupDragStart = null;
   };
 
   /*  private onLinkPointerUp = (linkView: dia.LinkView, evt: dia.Event) => {
