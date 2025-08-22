@@ -29,7 +29,7 @@ export class JointService implements OnDestroy {
   private _rubberNode?: SVGRectElement;
   private _multiBoxG?: SVGGElement;
   private _multiBoxRect?: SVGRectElement;
-  private _multiBoxDeleteBtn?: SVGTextElement;
+  private _multiBoxDeleteButton?: SVGElement;
 
   constructor() {
     this.selectedCells$
@@ -40,6 +40,8 @@ export class JointService implements OnDestroy {
       .subscribe(([prevIds, currIds]) => {
         const prevSet = new Set(prevIds);
         const currSet = new Set(currIds);
+        this.printSelectedCellsForDebug(prevIds, currIds);
+        this.updateMultiSelectionBox(currIds);
 
         for (const id of prevIds) {
           if (!currSet.has(id)) this.unhighlightCell(id);
@@ -50,10 +52,6 @@ export class JointService implements OnDestroy {
           }
         }
       });
-
-    this.selectedCells$
-      .pipe(distinctUntilChanged((a, b) => this.arraysEqual(a, b)))
-      .subscribe((currIds) => this.updateMultiSelectionBox(currIds));
   }
 
   private _toolsView?: ToolsView;
@@ -125,8 +123,7 @@ export class JointService implements OnDestroy {
     const { width, height } = el.size();
     el.position(x - width / 2, y - height / 2);
     el.addTo(this._graph);
-    this.clearAllSelection();
-    this.addToSelection(el.id);
+    this.selectSingle(el.id);
   }
 
   public highlightCell(cellId: ID): void {
@@ -175,6 +172,18 @@ export class JointService implements OnDestroy {
     this._graph.off('change add');
     this._graph.off('remove');
   }
+
+  private getSelectedIds(): ID[] {
+    return this.selectedCells$.value ?? [];
+  }
+
+  private printSelectedCellsForDebug = (prevIds: ID[], currIds: ID[]) => {
+    console.log('Previous:');
+    console.log(prevIds);
+    console.log('Current:');
+    console.log(currIds);
+    console.log('---------------------------------------------------');
+  };
 
   private removeCells = (idsToRemove: ID[]) => {
     if (!this._graph) return;
@@ -229,6 +238,11 @@ export class JointService implements OnDestroy {
   private setSelection(ids: ID[]) {
     this.selectedCells$.next([...ids]);
   }
+
+  private selectSingle(id: ID) {
+    this.setSelection([id]);
+  }
+
   private clearAllSelection() {
     this.selectedCells$.next([]);
   }
@@ -242,15 +256,12 @@ export class JointService implements OnDestroy {
     next.delete(id);
     this.selectedCells$.next([...next]);
   }
-  private getSelectedIds(): ID[] {
-    return this.selectedCells$.value ?? [];
-  }
   private removeMultiSelectionBox() {
     if (this._multiBoxG && this._multiBoxG.parentNode) {
       this._multiBoxG.parentNode.removeChild(this._multiBoxG);
     }
     this._multiBoxG = undefined;
-    this._multiBoxDeleteBtn = undefined;
+    this._multiBoxDeleteButton = undefined;
     this._multiBoxRect = undefined;
   }
   private arraysEqual(a: ID[], b: ID[]) {
@@ -287,6 +298,7 @@ export class JointService implements OnDestroy {
 
   private onBlankPointerClick = () => {
     this.clearAllSelection();
+    this.removeMultiSelectionBox();
   };
   private onBlankPointerDown = (_evt: dia.Event, x: number, y: number) => {
     this.clearAllSelection();
@@ -386,6 +398,7 @@ export class JointService implements OnDestroy {
     if (!this._multiBoxG) {
       this._multiBoxG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       this._multiBoxG.setAttribute('class', 'wam-multi-select-box');
+      this._multiBoxG.setAttribute('pointer-events', 'none');
 
       this._multiBoxRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       this._multiBoxRect.setAttribute('fill', 'none');
@@ -395,13 +408,13 @@ export class JointService implements OnDestroy {
       this._multiBoxRect.setAttribute('vector-effect', 'non-scaling-stroke');
       this._multiBoxRect.setAttribute('pointer-events', 'none');
 
-      // Create "delete button" as a circle + white X
-      const btnGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      this._multiBoxDeleteButton = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
       // red circle background
       const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       circle.setAttribute('r', '7');
       circle.setAttribute('fill', 'red');
+      circle.setAttribute('pointer-events', 'none');
 
       // white X
       const cross = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -412,22 +425,47 @@ export class JointService implements OnDestroy {
       cross.setAttribute('text-anchor', 'middle');
       cross.setAttribute('dominant-baseline', 'middle');
       cross.setAttribute('dy', '0.08em');
-      cross.setAttribute('pointer-events', 'none');
       cross.setAttribute('stroke', 'white');
       cross.setAttribute('stroke-width', '0.8');
       cross.setAttribute('paint-order', 'stroke');
+      cross.setAttribute('pointer-events', 'none');
 
-      btnGroup.appendChild(circle);
-      btnGroup.appendChild(cross);
-      btnGroup.setAttribute('cursor', 'pointer');
-      btnGroup.addEventListener('click', () => {
+      this._multiBoxDeleteButton.appendChild(circle);
+      this._multiBoxDeleteButton.appendChild(cross);
+      this._multiBoxDeleteButton.setAttribute('cursor', 'pointer');
+      this._multiBoxDeleteButton.setAttribute('pointer-events', 'visiblePainted');
+
+      const hit = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      hit.setAttribute('x', String(-8));
+      hit.setAttribute('y', String(-8));
+      hit.setAttribute('width', '16');
+      hit.setAttribute('height', '16');
+      hit.setAttribute('fill', 'transparent');
+      hit.setAttribute('pointer-events', 'all');
+
+      const consume = (e: Event) => {
+        e.stopPropagation();
+        e.preventDefault();
+      };
+      this._multiBoxDeleteButton.addEventListener('mousedown', consume);
+      this._multiBoxDeleteButton.addEventListener('touchstart', consume, { passive: false });
+
+      this._multiBoxDeleteButton.addEventListener('click', () => {
+        console.log('clicked');
         this.removeCells(selectedIds);
         this.removeMultiSelectionBox();
       });
+
+      this._multiBoxDeleteButton.appendChild(circle);
+      this._multiBoxDeleteButton.appendChild(cross);
+      this._multiBoxDeleteButton.appendChild(hit);
       this._multiBoxG.appendChild(this._multiBoxRect);
-      this._multiBoxG.appendChild(btnGroup);
+      this._multiBoxG.appendChild(this._multiBoxDeleteButton);
       viewportLayer.appendChild(this._multiBoxG);
-      btnGroup.setAttribute('transform', `translate(${bbox.x + 10}, ${bbox.y + 10})`);
+      this._multiBoxDeleteButton.setAttribute(
+        'transform',
+        `translate(${bbox.x + 10}, ${bbox.y + 10})`,
+      );
     }
 
     // Update box
@@ -436,9 +474,14 @@ export class JointService implements OnDestroy {
     this._multiBoxRect!.setAttribute('width', String(bbox.width));
     this._multiBoxRect!.setAttribute('height', String(bbox.height));
 
-    // Position the delete button at top-right
-    this._multiBoxDeleteBtn!.setAttribute('x', String(bbox.x));
-    this._multiBoxDeleteBtn!.setAttribute('y', String(bbox.y));
+    // Reposition the delete button on EVERY update
+    if (this._multiBoxDeleteButton) {
+      const pad = 8;
+      this._multiBoxDeleteButton.setAttribute(
+        'transform',
+        `translate(${bbox.x + pad}, ${bbox.y + pad})`,
+      );
+    }
   }
 
   private dragCellsAsGroup(view: dia.ElementView, x?: number, y?: number) {
@@ -459,6 +502,12 @@ export class JointService implements OnDestroy {
       }
     }
 
+    if (this._multiBoxG && this._groupDragStart) {
+      const dx = (x ?? 0) - this._groupDragStart.x;
+      const dy = (y ?? 0) - this._groupDragStart.y;
+      this._multiBoxG.setAttribute('transform', `translate(${dx}, ${dy})`);
+    }
+
     this._graph?.stopBatch('group-move');
   }
   private initDraggingCells(elementView: dia.ElementView, x?: number, y?: number) {
@@ -466,8 +515,7 @@ export class JointService implements OnDestroy {
     const thisId = String(elementView.model.id);
 
     if (!ids.includes(thisId)) {
-      this.clearAllSelection();
-      this.addToSelection(elementView.model.id);
+      this.selectSingle(elementView.model.id);
     }
 
     if (this.getSelectedIds().length < 2) {
@@ -495,12 +543,14 @@ export class JointService implements OnDestroy {
     this._groupDragActive = false;
     this._groupBasePos.clear();
     this._groupDragStart = null;
+
+    if (this._multiBoxG) this._multiBoxG.removeAttribute('transform');
+    this.updateMultiSelectionBox(this.getSelectedIds());
   }
 
   private showToolView = (elementView: dia.ElementView) => {
     if (!this.selectedCells$.value.find((id) => id == elementView.model.id)) {
-      this.clearAllSelection();
-      this.addToSelection(elementView.model.id);
+      this.selectSingle(elementView.model.id);
     }
     const cellView = this.getCellView(elementView.model.id);
     cellView.addTools(this.toolsView);
