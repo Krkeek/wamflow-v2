@@ -44,8 +44,6 @@ export class JointService implements OnDestroy {
         for (const id of currIds) {
           if (!prevSet.has(id)) {
             this.highlightCell(id);
-            const view = this.getCellView(id);
-            if (view && this.toolsView) view.addTools(this.toolsView);
           }
         }
       });
@@ -77,7 +75,7 @@ export class JointService implements OnDestroy {
       highlighting: {
         embedding: false,
       },
-      validateConnection: function (cellViewS, magnetS, cellViewT) {
+      validateConnection: function (cellViewS, _magnetS, cellViewT) {
         return cellViewS !== cellViewT;
       },
     });
@@ -103,7 +101,9 @@ export class JointService implements OnDestroy {
     return { graph, paper };
   }
 
+  /*
   public removeCell(cellId: string): void {}
+*/
 
   public addCell(cell: WamElements, specificGraph?: dia.Graph, specificPaper?: dia.Paper): void {
     const newCell = this.elementCreatorService.create(cell);
@@ -123,7 +123,9 @@ export class JointService implements OnDestroy {
     }
   }
 
+  /*
   public duplicateCell(cellId: string): void {}
+*/
 
   public highlightCell(cellId: ID): void {
     const cell = this.getCellById(cellId);
@@ -151,7 +153,7 @@ export class JointService implements OnDestroy {
     this.unhighlightCell(cellId);
   }
 
-  public exportAsJson(): string | void {}
+  /*  public exportAsJson(): string | void {}
 
   public importAsJson(json: string): void {}
 
@@ -159,31 +161,33 @@ export class JointService implements OnDestroy {
 
   public exportAsRdf(): void {}
 
-  public resetPaperDefaultSettings(): void {}
+  public resetPaperDefaultSettings(): void {}*/
 
-  public getAllElements(): dia.Element[] {
+  /*  public getAllElements(): dia.Element[] {
     return [];
   }
 
   public getAllLinks(): dia.Link[] {
     return [];
-  }
+  }*/
 
-  public updateCellAttributes(cellId: string, attrs: dia.Cell.Attributes): void {}
+  /*  public updateCellAttributes(cellId: string, attrs: dia.Cell.Attributes): void {}
 
   public updateAttributeByName(cellId: string, attrName: string, value: string): void {}
 
   public getAttributeByCellId(cellId: string, attrName: string): string {
     return '';
-  }
+  }*/
 
-  public setPaperDimensions(width: number, height: number): void {
+  /*  public setPaperDimensions(width: number, height: number): void {
     if (width < 4000 || height < 4000)
       throw new Error('Paper Dimensions must be greater than 4000px');
     this.paper?.setDimensions(width, height);
-  }
+  }*/
+  /*
 
   public setCellDimensions(width: number, height: number): void {}
+*/
 
   public ngOnDestroy(): void {
     if (!this.paper || !this.graph) throw new Error('No paper or graph found.');
@@ -214,6 +218,7 @@ export class JointService implements OnDestroy {
     const { width, height } = el.size();
     el.position(x - width / 2, y - height / 2);
     el.addTo(this.graph);
+    this.clearAllSelection();
     this.addToSelection(el.id);
   }
 
@@ -272,22 +277,23 @@ export class JointService implements OnDestroy {
 
     // attach
     this.paper.on('element:pointerdown', this.onElementPointerDown);
-    this.paper.on('element:mouseover', this.onElementMouseOver);
-    this.paper.on('element:mouseleave', this.onElementMouseLeave);
+    /*    this.paper.on('element:mouseover', this.onElementMouseOver);
+    this.paper.on('element:mouseleave', this.onElementMouseLeave);*/
     this.paper.on('element:contextmenu', this.onElementContextMenu);
     this.paper.on('link:pointerdown', this.onLinkPointerDown);
-    this.paper.on('link:pointerup', this.onLinkPointerUp);
-    this.paper.on('link:mouseenter', this.onLinkMouseEnter);
+    /*    this.paper.on('link:pointerup', this.onLinkPointerUp);
+    this.paper.on('link:mouseenter', this.onLinkMouseEnter);*/
     this.paper.on('blank:pointerclick', this.onBlankPointerClick);
     this.paper.on('blank:pointerdown', this.onBlankPointerDown);
     this.paper.on('blank:pointerup', this.onBlankPointerUp);
     this.paper.on('blank:pointermove', this.onBlankPointerMove);
-    this.paper.on('blank:mouseover', this.onBlankMouseOver);
-    this.graph.on('change add', this.onGraphUpdate);
+    /*    this.paper.on('blank:mouseover', this.onBlankMouseOver);
+    this.graph.on('change add', this.onGraphUpdate);*/
     this.graph.on('remove', this.onGraphRemove);
   }
 
-  private onElementPointerDown = (elementView: dia.ElementView, evt: dia.Event) => {
+  private onElementPointerDown = (elementView: dia.ElementView) => {
+    this.clearAllSelection();
     this.addToSelection(elementView.model.id);
   };
 
@@ -295,11 +301,13 @@ export class JointService implements OnDestroy {
     console.log('[Joint] link:pointerdown', { id: linkView.model.id, evt });
     // TODO: select link, show tools
   };
+  /*
   private onElementMouseOver = (elementView: dia.ElementView) => {};
 
   private onElementMouseLeave = (elementView: dia.ElementView) => {};
+*/
 
-  private onElementContextMenu = (elementView: dia.ElementView, evt: dia.Event) => {
+  private onElementContextMenu = (elementView: dia.ElementView) => {
     if (!this.selectedCells$.value.find((id) => id == elementView.model.id)) {
       this.addToSelection(elementView.model.id);
     }
@@ -307,12 +315,11 @@ export class JointService implements OnDestroy {
     cellView.addTools(this.toolsView);
   };
 
-  private onLinkPointerUp = (linkView: dia.LinkView, evt: dia.Event) => {
-    console.log('[Joint] link:pointerup', { id: linkView.model.id, evt });
-    // TODO: handle finishing link creation or releasing
-  };
+  /*  private onLinkPointerUp = (linkView: dia.LinkView, evt: dia.Event) => {
 
-  private onBlankPointerClick = (evt: dia.Event, x: number, y: number) => {
+  };*/
+
+  private onBlankPointerClick = () => {
     this.clearAllSelection();
   };
   private onBlankPointerDown = (_evt: dia.Event, x: number, y: number) => {
@@ -370,17 +377,18 @@ export class JointService implements OnDestroy {
     this.rubberNode.setAttribute('height', String(h));
   };
 
-  private onLinkMouseEnter = (linkView: dia.LinkView, evt: dia.Event) => {
-    console.log('[Joint] link:mouseenter', { id: linkView.model.id, evt });
-    // TODO: maybe show hover tools, highlight link
-  };
+  /*
+  private onLinkMouseEnter = (linkView: dia.LinkView, evt: dia.Event) => {};
+*/
 
+  /*
   private onBlankMouseOver = (evt: dia.Event) => {};
+*/
 
-  private onGraphUpdate = (cell: dia.Cell, opt: dia.Cell.Options) => {
-    // TODO: sync model, trigger save, update UI
-  };
-  private onGraphRemove = (cell: dia.Cell, opt: dia.Cell.Options) => {
+  /*  private onGraphUpdate = (cell: dia.Cell, opt: dia.Cell.Options) => {
+
+  };*/
+  private onGraphRemove = (cell: dia.Cell) => {
     this.removeFromSelection(cell.id);
   };
 }
