@@ -1,0 +1,22 @@
+.list{
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+::ng-deep .dialog-container mat-dialog-container {
+  border-radius: var(--defaultBorderRadius) !important;
+  background-color: white !important;
+}
+
+::ng-deep .dialog-container .mat-mdc-list-item {
+  padding-left: 1.5rem !important;
+  box-sizing: border-box !important;
+}
+
+::ng-deep .dialog-container .mat-mdc-list-item.danger {
+  background-color: rgba(255, 0, 0, 0.08) ;
+}
+
+::ng-deep .dialog-container .mat-mdc-list-item.danger .mdc-list-item__primary-text {
+  color: red ;
+}

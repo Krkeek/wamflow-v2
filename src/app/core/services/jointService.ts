@@ -8,6 +8,8 @@ import { ResizeControl } from '../Infrastructure/ResizeControl';
 import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
 import CellView = dia.CellView;
+import { DialogService } from './dialogService';
+import { ElementSettingsDialog } from '../../shared/components/element-settings-dialog/element-settings-dialog';
 
 @Injectable({
   providedIn: 'root',
@@ -16,6 +18,7 @@ export class JointService implements OnDestroy {
   public selectedCells$ = new BehaviorSubject<ID[]>([]);
 
   private readonly _elementCreatorService = inject(ElementCreatorService);
+  private readonly _dialogService = inject(DialogService);
   private _graph?: dia.Graph;
   private _paper?: dia.Paper;
   private _paperDimensions = {
@@ -128,12 +131,14 @@ export class JointService implements OnDestroy {
     }
   }
   public addCellAt(cell: WamElements, x: number, y: number) {
-    if (!this._graph) return;
+    if (!this._graph || !this._paper) return;
     const el = this._elementCreatorService.create(cell);
     const { width, height } = el.size();
     el.position(x - width / 2, y - height / 2);
     el.addTo(this._graph);
     this.selectSingle(el.id);
+    const cellView = el.findView(this._paper);
+    this.showToolView(cellView);
   }
 
   public highlightCell(cellId: ID): void {
@@ -247,8 +252,11 @@ export class JointService implements OnDestroy {
       ],
       icon: { icon: '⚙' },
       action: (evt: dia.Event, view: dia.ElementView) => {
-        console.log('Settings clicked for:', view.model.id);
-        // open your settings panel here
+        this._dialogService.openDialog(ElementSettingsDialog, {
+          data: { view: view, evt: evt },
+          autoFocus: false,
+          panelClass: 'dialog-container',
+        });
       },
     });
     this._toolsView = new dia.ToolsView({
@@ -665,11 +673,10 @@ export class JointService implements OnDestroy {
     this.updateMultiSelectionBox(this.getSelectedIds());
   }
 
-  private showToolView = (elementView: dia.ElementView) => {
-    if (!this.selectedCells$.value.find((id) => id == elementView.model.id)) {
-      this.selectSingle(elementView.model.id);
+  private showToolView = (cellView: dia.CellView) => {
+    if (!this.selectedCells$.value.find((id) => id == cellView.model.id)) {
+      this.selectSingle(cellView.model.id);
     }
-    const cellView = this.getCellView(elementView.model.id);
     cellView.addTools(this.toolsView);
   };
 
