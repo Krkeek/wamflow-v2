@@ -12,7 +12,7 @@ export class CustomElement extends dia.Element {
   override defaults() {
     return {
       ...super.defaults,
-      type: 'customElement',
+      type: 'custom.Element',
     };
   }
 }

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -25,6 +25,17 @@ export class ConfirmationDialog {
   readonly data = inject<ConfirmOptions>(MAT_DIALOG_DATA);
   private readonly ref = inject(MatDialogRef<ConfirmationDialog, boolean>);
 
+  @HostListener('window:keydown', ['$event'])
+  onDocKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      this.ref.close(true);
+    }
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      this.ref.close(false);
+    }
+  }
   close(result: boolean) {
     this.ref.close(result);
   }

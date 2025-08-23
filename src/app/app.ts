@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { JointService } from './core/services/jointService';
 
 @Component({
   selector: 'app-root',
@@ -18,4 +19,11 @@ export class App {
       event.returnValue = '';
     }
   }*/
+
+  private readonly jointService = inject(JointService);
+  @HostListener('window:keydown', ['$event'])
+  onDocKeydown(e: KeyboardEvent) {
+    e.preventDefault();
+    this.jointService.triggerKeyboardAction(e);
+  }
 }

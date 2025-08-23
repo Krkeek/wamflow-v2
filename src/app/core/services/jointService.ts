@@ -10,6 +10,8 @@ import ID = dia.Cell.ID;
 import CellView = dia.CellView;
 import { DialogService } from './dialogService';
 import { ElementSettingsDialog } from '../../shared/components/element-settings-dialog/element-settings-dialog';
+import { CustomElement } from '../Infrastructure/CustomElement';
+import { HistoryService } from './historyService';
 
 @Injectable({
   providedIn: 'root',
@@ -19,6 +21,8 @@ export class JointService implements OnDestroy {
 
   private readonly _elementCreatorService = inject(ElementCreatorService);
   private readonly _dialogService = inject(DialogService);
+  private readonly _historyService = inject(HistoryService);
+
   private _graph?: dia.Graph;
   private _paper?: dia.Paper;
   private _paperDimensions = {
@@ -38,6 +42,13 @@ export class JointService implements OnDestroy {
   private _groupResizeBase = new Map<ID, { x: number; y: number; w: number; h: number }>();
   private _groupResizeAnchor: { x: number; y: number } | null = null;
   private _groupResizeStart: { w: number; h: number } | null = null;
+
+  private namespace = {
+    ...shapes,
+    custom: {
+      Element: CustomElement,
+    },
+  };
 
   constructor() {
     this.selectedCells$
@@ -69,11 +80,37 @@ export class JointService implements OnDestroy {
   }
 
   private _toolsView?: ToolsView;
+
   private get toolsView(): ToolsView {
     if (!this._toolsView) {
       throw new Error('No tools view found.');
     }
     return this._toolsView;
+  }
+
+  public triggerKeyboardAction(e: KeyboardEvent) {
+    if (!this._graph) return;
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      this._dialogService
+        .confirm({
+          title: this.selectedCells$.value.length < 2 ? 'Delete cell' : 'Delete cells',
+          message:
+            this.selectedCells$.value.length < 2
+              ? 'Are you sure you want to delete this cell? This action cannot be undone.'
+              : 'Are you sure you want to delete these cells? This action cannot be undone.',
+          confirmText: 'Delete',
+          cancelText: 'Cancel',
+        })
+        .subscribe((ok) => {
+          if (ok) {
+            this.removeCells(this.selectedCells$.value);
+            this.removeMultiSelectionBox();
+          }
+        });
+    }
+
+    if (e.ctrlKey && e.key === 'z') this._historyService.undo(this._graph);
+    if (e.ctrlKey && e.key === 'y') this._historyService.redo(this._graph);
   }
 
   public initPaper(canvas: HTMLElement): void {
@@ -89,7 +126,7 @@ export class JointService implements OnDestroy {
         name: 'mesh',
         args: { color: '#bdbdbd', thickness: 1 },
       },
-      cellViewNamespace: shapes,
+      cellViewNamespace: this.namespace,
       linkPinning: false,
       defaultConnectionPoint: { name: 'boundary' },
       restrictTranslate: true,
@@ -97,8 +134,11 @@ export class JointService implements OnDestroy {
       highlighting: { embedding: false },
       validateConnection: (s, _m, t) => s !== t,
     });
+
     this.initToolTips();
     this.bindPaperEvents();
+
+    if (!this._graph) return;
   }
   public initPalettePaper(canvas: HTMLElement): { graph: dia.Graph; paper: dia.Paper } {
     const graph = this.getPaletteItemGraph();
@@ -106,7 +146,7 @@ export class JointService implements OnDestroy {
       el: canvas,
       model: graph,
       interactive: false,
-      cellViewNamespace: shapes,
+      cellViewNamespace: this.namespace,
       width: 90,
       height: 90,
     });
@@ -130,8 +170,10 @@ export class JointService implements OnDestroy {
       }
     }
   }
+
   public addCellAt(cell: WamElements, x: number, y: number) {
     if (!this._graph || !this._paper) return;
+    this._historyService.snapshot(this._graph);
     const el = this._elementCreatorService.create(cell);
     const { width, height } = el.size();
     el.position(x - width / 2, y - height / 2);
@@ -205,16 +247,19 @@ export class JointService implements OnDestroy {
     this._graph.off('change');
     this._graph.off('add');
     this._graph.off('remove');
+    this._graph.off('change add remove');
   }
 
   public removeCells = (idsToRemove: ID[]) => {
     if (!this._graph) return;
+    this._historyService.snapshot(this._graph);
     const cellsToRemove = this._graph.getCells().filter((cell) => idsToRemove.includes(cell.id));
     this._graph.removeCells(cellsToRemove);
   };
 
   public removeCellById = (idToRemove: ID) => {
     if (!this._graph) return;
+    this._historyService.snapshot(this._graph);
     const cellsToRemove = this._graph.getCell(idToRemove);
     this._graph.removeCells([cellsToRemove]);
   };
@@ -232,7 +277,7 @@ export class JointService implements OnDestroy {
   };
 
   private initGraph(): dia.Graph | void {
-    this._graph = new dia.Graph({}, { cellNamespace: shapes });
+    this._graph = new dia.Graph({}, { cellNamespace: this.namespace });
   }
   private getPaletteItemGraph(): dia.Graph {
     return new dia.Graph({}, { cellNamespace: shapes });
@@ -315,21 +360,11 @@ export class JointService implements OnDestroy {
     this._paper.on('element:pointerdown', this.onElementPointerDown);
     this._paper.on('element:pointermove', this.onElementPointerMove);
     this._paper.on('element:pointerup', this.onElementPointerUp);
-
-    /*    this._paper.on('element:mouseover', this.onElementMouseOver);
-    this._paper.on('element:mouseleave', this.onElementMouseLeave);*/
     this._paper.on('element:contextmenu', this.onElementContextMenu);
-    /*
-    this._paper.on('link:pointerdown', this.onLinkPointerDown);
-*/
-    /*    this._paper.on('link:pointerup', this.onLinkPointerUp);
-    this._paper.on('link:mouseenter', this.onLinkMouseEnter);*/
     this._paper.on('blank:pointerclick', this.onBlankPointerClick);
     this._paper.on('blank:pointerdown', this.onBlankPointerDown);
     this._paper.on('blank:pointerup', this.onBlankPointerUp);
     this._paper.on('blank:pointermove', this.onBlankPointerMove);
-    /*    this._paper.on('blank:mouseover', this.onBlankMouseOver);
-    this._graph.on('change add', this.onGraphUpdate);*/
     this._graph.on('remove', this.onGraphRemove);
     this._graph.on('add', this.onGraphAdd);
   }
@@ -419,6 +454,7 @@ export class JointService implements OnDestroy {
   };
 
   private onGraphAdd = () => {
+    if (!this._graph) return;
     this.removeMultiSelectionBox();
   };
 
@@ -850,65 +886,4 @@ export class JointService implements OnDestroy {
     // Recompute overlay each move so the handle sticks to bottom-right
     this.updateMultiSelectionBox(this.getSelectedIds());
   }
-  /*  private onLinkPointerUp = (linkView: dia.LinkView, evt: dia.Event) => {
-
-};*/
-
-  /*
-  private onLinkMouseEnter = (linkView: dia.LinkView, evt: dia.Event) => {};
-*/
-
-  /*
-  private onBlankMouseOver = (evt: dia.Event) => {};
-*/
-
-  /*  private onGraphUpdate = (cell: dia.Cell, opt: dia.Cell.Options) => {
-
-  };*/
-
-  /*  public exportAsJson(): string | void {}
-
-  public importAsJson(json: string): void {}
-
-  public exportAsPNG(): void {}
-
-  public exportAsRdf(): void {}
-
-  public resetPaperDefaultSettings(): void {}*/
-
-  /*  public getAllElements(): dia.Element[] {
-    return [];
-  }
-
-  public getAllLinks(): dia.Link[] {
-    return [];
-  }*/
-
-  /*  public updateCellAttributes(cellId: string, attrs: dia.Cell.Attributes): void {}
-
-  public updateAttributeByName(cellId: string, attrName: string, value: string): void {}
-
-  public getAttributeByCellId(cellId: string, attrName: string): string {
-    return '';
-  }*/
-
-  /*  public setPaperDimensions(width: number, height: number): void {
-    if (width < 4000 || height < 4000)
-      throw new Error('Paper Dimensions must be greater than 4000px');
-    this._paper?.setDimensions(width, height);
-  }*/
-  /*
-
-  public setCellDimensions(width: number, height: number): void {}
-*/
-
-  /*
-private onElementMouseOver = (elementView: dia.ElementView) => {};
-
-private onElementMouseLeave = (elementView: dia.ElementView) => {};
-*/
-
-  /*  private onLinkPointerDown = (linkView: dia.LinkView, evt: dia.Event) => {
-    console.log('[Joint] link:pointerdown', { id: linkView.model.id, evt });
-  };*/
 }
