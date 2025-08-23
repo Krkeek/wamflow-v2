@@ -1,4 +1,4 @@
-import { Component, HostBinding, HostListener, inject } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
