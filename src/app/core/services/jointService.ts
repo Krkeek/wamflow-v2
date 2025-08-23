@@ -345,11 +345,11 @@ export class JointService implements OnDestroy {
   private clearAllSelection() {
     this.selectedCells$.next([]);
   }
-  private addToSelection(id: ID) {
+  /*  private addToSelection(id: ID) {
     const next = new Set(this.selectedCells$.value);
     next.add(id);
     this.selectedCells$.next([...next]);
-  }
+  }*/
   private removeFromSelection(id: ID) {
     const next = new Set(this.selectedCells$.value);
     next.delete(id);
@@ -575,14 +575,13 @@ export class JointService implements OnDestroy {
       };
       this._multiBoxResizeButton.addEventListener('mousedown', (e) => {
         eat(e);
-        this.beginGroupResize(e as MouseEvent);
+        this.beginGroupResize();
       });
       this._multiBoxResizeButton.addEventListener(
         'touchstart',
         (e) => {
           eat(e);
-          const t = (e as TouchEvent).touches[0];
-          this.beginGroupResize(t);
+          this.beginGroupResize();
         },
         { passive: false },
       );
@@ -736,7 +735,7 @@ export class JointService implements OnDestroy {
     cellView.addTools(this.toolsView);
   };
 
-  private beginGroupResize(pt: { clientX: number; clientY: number }) {
+  private beginGroupResize() {
     if (!this._paper || !this._graph) return;
 
     const ids = this.getSelectedIds();
