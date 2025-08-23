@@ -27,7 +27,6 @@ export class App {
   @HostListener('window:keydown', ['$event'])
   onDocKeydown(e: KeyboardEvent) {
     if (this.dialog.openDialogs.length) return;
-    e.preventDefault();
     this.jointService.triggerKeyboardAction(e);
   }
 }

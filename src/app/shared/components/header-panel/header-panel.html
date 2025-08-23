@@ -1,0 +1,31 @@
+<div class="Container">
+  <div class="LeftDiv">
+    <img
+      alt="logo"
+      class="Logo"
+      decoding="async"
+      height="35"
+      ngSrc="/assets/logo.webp"
+      width="35"
+    />
+
+    <input [(ngModel)]="title" [disabled]="!ready()" class="Title" placeholder="Untitled" />
+  </div>
+
+  <button (click)="openFilePicker()" class="Import" type="button">
+    <img
+      alt="import"
+      class="Logo"
+      decoding="async"
+      height="20"
+      ngSrc="/assets/import.webp"
+      width="20"
+    />
+  </button>
+
+  <button (click)="exportJSON()" class="Import Export" type="button">
+    <img alt="import" class="Logo" height="20" ngSrc="/assets/import.webp" width="20" />
+  </button>
+
+  <input #fileInput (change)="onFileChange($event)" accept=".json" class="InputFile" type="file" />
+</div>

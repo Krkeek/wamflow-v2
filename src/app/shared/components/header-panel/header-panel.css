@@ -1,0 +1,59 @@
+:host {
+  height: 60%;
+}
+
+.Container {
+  display: flex;
+  background-color: var(--ancientTwo-color);
+  border-radius: 10px;
+  height: 100%;
+  width: 100%;
+  padding: 0 1rem;
+}
+
+
+.LeftDiv {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.Logo {
+  display: block;
+}
+
+.Title {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  font: inherit;
+  background: transparent;
+}
+
+
+.Import {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 6px;
+}
+
+.Export {
+  transform: rotate(180deg);
+}
+
+.InputFile {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+}

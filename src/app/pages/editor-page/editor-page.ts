@@ -2,10 +2,11 @@ import { AfterViewInit, Component, ElementRef, inject, ViewChild } from '@angula
 import { JointService } from '../../core/services/jointService';
 import { Palette } from '../../shared/components/palette/palette';
 import { WamElements } from '../../core/enums/WamElements';
+import { HeaderPanel } from '../../shared/components/header-panel/header-panel';
 
 @Component({
   selector: 'app-editor-page',
-  imports: [Palette],
+  imports: [Palette, HeaderPanel],
   templateUrl: './editor-page.html',
   styleUrl: './editor-page.css',
 })

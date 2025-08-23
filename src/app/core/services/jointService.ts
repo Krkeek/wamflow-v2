@@ -1,4 +1,4 @@
-import { inject, Injectable, OnDestroy } from '@angular/core';
+import { inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { dia, elementTools, g, shapes } from '@joint/core';
 import { WamElements } from '../enums/WamElements';
 import { ElementCreatorService } from './elementCreatorService';
@@ -18,11 +18,11 @@ import { HistoryService } from './historyService';
 })
 export class JointService implements OnDestroy {
   public selectedCells$ = new BehaviorSubject<ID[]>([]);
-
+  public readonly ready = signal(false);
+  public readonly title = signal('');
   private readonly _elementCreatorService = inject(ElementCreatorService);
   private readonly _dialogService = inject(DialogService);
   private readonly _historyService = inject(HistoryService);
-
   private _graph?: dia.Graph;
   private _paper?: dia.Paper;
   private _paperDimensions = {
@@ -42,7 +42,6 @@ export class JointService implements OnDestroy {
   private _groupResizeBase = new Map<ID, { x: number; y: number; w: number; h: number }>();
   private _groupResizeAnchor: { x: number; y: number } | null = null;
   private _groupResizeStart: { w: number; h: number } | null = null;
-
   private namespace = {
     ...shapes,
     custom: {
@@ -88,9 +87,14 @@ export class JointService implements OnDestroy {
     return this._toolsView;
   }
 
+  public setTitle(v: string) {
+    this.title.set(v);
+  }
+
   public triggerKeyboardAction(e: KeyboardEvent) {
     if (!this._graph || this.selectedCells$.value.length === 0) return;
     if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault();
       this._dialogService
         .confirm({
           title: this.selectedCells$.value.length < 2 ? 'Delete cell' : 'Delete cells',
@@ -110,8 +114,14 @@ export class JointService implements OnDestroy {
         });
     }
 
-    if (e.ctrlKey && e.key === 'z') this._historyService.undo(this._graph);
-    if (e.ctrlKey && e.key === 'y') this._historyService.redo(this._graph);
+    if (e.ctrlKey && e.key === 'z') {
+      e.preventDefault();
+      this._historyService.undo(this._graph);
+    }
+    if (e.ctrlKey && e.key === 'y') {
+      e.preventDefault();
+      this._historyService.redo(this._graph);
+    }
   }
 
   public initPaper(canvas: HTMLElement): void {
@@ -138,9 +148,9 @@ export class JointService implements OnDestroy {
 
     this.initToolTips();
     this.bindPaperEvents();
-
-    if (!this._graph) return;
+    this.ready.set(true);
   }
+
   public initPalettePaper(canvas: HTMLElement): { graph: dia.Graph; paper: dia.Paper } {
     const graph = this.getPaletteItemGraph();
     const paper = new dia.Paper({
@@ -229,6 +239,27 @@ export class JointService implements OnDestroy {
     return this._paper.clientToLocalPoint({ x: clientX, y: clientY });
   }
 
+  public importJSON = async (file: File) => {
+    if (!this._graph) return;
+    const JSONObject = await this.parseJsonFile(file);
+    this._graph.fromJSON(JSONObject);
+    this.parseTitleFromGraph();
+  };
+
+  public exportJSON = async () => {
+    if (!this._graph) return;
+    this.parseTitleToGraph();
+    const jsonObject = this._graph.toJSON();
+    const jsonString = JSON.stringify(jsonObject, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.download = (this.title() || 'Untitled') + '.json';
+    link.href = URL.createObjectURL(blob);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   public ngOnDestroy(): void {
     if (!this._paper || !this._graph) throw new Error('No _paper or _graph found.');
 
@@ -263,6 +294,41 @@ export class JointService implements OnDestroy {
     this._historyService.snapshot(this._graph);
     const cellsToRemove = this._graph.getCell(idToRemove);
     this._graph.removeCells([cellsToRemove]);
+  };
+
+  private parseTitleToGraph() {
+    this._graph?.set('title', this.title());
+  }
+
+  private parseTitleFromGraph() {
+    const title = this._graph?.get('title');
+    this.title.set(title);
+  }
+
+  private parseJsonFile = async (file: File): Promise<unknown> => {
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+
+      fileReader.onload = (event: ProgressEvent<FileReader>) => {
+        const reader = event.target;
+        if (!reader) {
+          reject(new Error('No FileReader target'));
+          return;
+        }
+        try {
+          const text = reader.result as string;
+          resolve(JSON.parse(text));
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      fileReader.onerror = (event: ProgressEvent<FileReader>) => {
+        reject(event.target?.error ?? new Error('FileReader error'));
+      };
+
+      fileReader.readAsText(file);
+    });
   };
 
   private getSelectedIds(): ID[] {
