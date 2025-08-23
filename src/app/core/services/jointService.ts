@@ -179,7 +179,8 @@ export class JointService implements OnDestroy {
     this._paper.off('blank:pointermove');
     this._paper.off('link:mouseenter');
     this._paper.off('blank:mouseover');
-    this._graph.off('change add');
+    this._graph.off('change');
+    this._graph.off('add');
     this._graph.off('remove');
   }
 
@@ -216,8 +217,42 @@ export class JointService implements OnDestroy {
     const removeButton = new elementTools.Remove();
     const resizeButton = new ResizeControl();
 
+    const settingsButton = new elementTools.Button({
+      x: '99%',
+      y: '1%',
+      markup: [
+        {
+          tagName: 'circle',
+          selector: 'button',
+          attributes: {
+            r: 7,
+            fill: 'gray',
+            cursor: 'pointer',
+          },
+        },
+        {
+          tagName: 'text',
+          selector: 'icon',
+          attributes: {
+            x: 0,
+            y: 1,
+            'text-anchor': 'middle',
+            'dominant-baseline': 'middle',
+            'font-size': 10,
+            'font-weight': 'bold',
+            fill: '#333',
+            'pointer-events': 'none',
+          },
+        },
+      ],
+      icon: { icon: '⚙' },
+      action: (evt: dia.Event, view: dia.ElementView) => {
+        console.log('Settings clicked for:', view.model.id);
+        // open your settings panel here
+      },
+    });
     this._toolsView = new dia.ToolsView({
-      tools: [boundaryTool, removeButton, resizeButton],
+      tools: [boundaryTool, removeButton, resizeButton, settingsButton],
     });
   }
   private bindPaperEvents(): void {
@@ -243,6 +278,7 @@ export class JointService implements OnDestroy {
     /*    this._paper.on('blank:mouseover', this.onBlankMouseOver);
     this._graph.on('change add', this.onGraphUpdate);*/
     this._graph.on('remove', this.onGraphRemove);
+    this._graph.on('add', this.onGraphAdd);
   }
 
   private setSelection(ids: ID[]) {
@@ -299,6 +335,7 @@ export class JointService implements OnDestroy {
   };
 
   private onElementContextMenu = (elementView: dia.ElementView) => {
+    this.removeMultiSelectionBox();
     this.showToolView(elementView);
   };
 
@@ -311,6 +348,7 @@ export class JointService implements OnDestroy {
     this.removeMultiSelectionBox();
   };
   private onBlankPointerDown = (_evt: dia.Event, x: number, y: number) => {
+    this.removeMultiSelectionBox();
     this.clearAllSelection();
     this.createRubberNode(x, y);
   };
@@ -325,6 +363,10 @@ export class JointService implements OnDestroy {
 
   private onGraphRemove = (cell: dia.Cell) => {
     this.removeFromSelection(cell.id);
+  };
+
+  private onGraphAdd = () => {
+    this.removeMultiSelectionBox();
   };
 
   private createRubberNode = (x: number, y: number) => {
@@ -516,10 +558,6 @@ export class JointService implements OnDestroy {
         this.removeMultiSelectionBox();
       });
 
-      this._multiBoxResizeButton.addEventListener('click', () => {
-        console.log('click');
-      });
-
       this._multiBoxDeleteButton.appendChild(circle);
       this._multiBoxDeleteButton.appendChild(cross);
       this._multiBoxDeleteButton.appendChild(hit);
@@ -535,7 +573,7 @@ export class JointService implements OnDestroy {
       if (this._multiBoxResizeButton) {
         this._multiBoxResizeButton.setAttribute(
           'transform',
-          `translate(${bbox.x + bbox.width}, ${bbox.y + bbox.height})`,
+          `translate(${bbox.x + (bbox.width - 10)}, ${bbox.y + (bbox.height - 10)})`,
         );
       }
     }
@@ -558,7 +596,7 @@ export class JointService implements OnDestroy {
     if (this._multiBoxResizeButton) {
       this._multiBoxResizeButton.setAttribute(
         'transform',
-        `translate(${bbox.x + bbox.width}, ${bbox.y + bbox.height})`,
+        `translate(${bbox.x + (bbox.width - 10)}, ${bbox.y + (bbox.height - 10)})`,
       );
     }
   }
