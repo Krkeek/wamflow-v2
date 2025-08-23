@@ -1,6 +1,11 @@
 import { inject, Injectable } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ComponentType } from '@angular/cdk/portal';
+import {
+  ConfirmationDialog,
+  ConfirmOptions,
+} from '../../shared/components/confirmation-dialog/confirmation-dialog';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -8,7 +13,7 @@ import { ComponentType } from '@angular/cdk/portal';
 export class DialogService {
   private readonly dialog = inject(MatDialog);
 
-  openDialog<T, D = unknown, R = unknown>(
+  public openDialog<T, D = unknown, R = unknown>(
     component: ComponentType<T>,
     config?: MatDialogConfig<D>,
   ) {
@@ -16,5 +21,21 @@ export class DialogService {
       ...config,
       minHeight: '20vh',
     });
+  }
+
+  confirm(options: ConfirmOptions, config?: Omit<MatDialogConfig<ConfirmOptions>, 'data'>) {
+    return this.dialog
+      .open<
+        ConfirmationDialog,
+        ConfirmOptions,
+        boolean
+      >(ConfirmationDialog, { data: options, ...config })
+      .afterClosed();
+  }
+
+  async withConfirm(options: ConfirmOptions, action: () => void | Promise<void>) {
+    const ok = await firstValueFrom(this.confirm(options));
+    if (ok) await action();
+    return ok === true;
   }
 }

@@ -3,10 +3,7 @@
   padding-right: 0 !important;
 }
 
-::ng-deep .dialog-container mat-dialog-container {
-  border-radius: var(--defaultBorderRadius) !important;
-  background-color: white !important;
-}
+
 
 ::ng-deep .dialog-container .mat-mdc-list-item {
   padding-left: 1.5rem !important;

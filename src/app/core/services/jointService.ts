@@ -163,6 +163,24 @@ export class JointService implements OnDestroy {
     return cell;
   }
 
+  public duplicateCell(cellId: ID): void {
+    if (!this._graph || !this._paper) return;
+
+    const cell = this._graph.getCell(cellId);
+    if (!cell || !cell.isElement()) return;
+
+    const newCell = cell.clone();
+
+    const { x, y } = (cell as dia.Element).position();
+    const { width } = (cell as dia.Element).size();
+
+    const offset = 20;
+    (newCell as dia.Element).position(x + width + offset, y);
+
+    newCell.addTo(this._graph);
+    this.selectSingle(newCell.id);
+  }
+
   public clientToLocal(clientX: number, clientY: number) {
     if (!this._paper) throw new Error('No _paper or _graph found.');
     return this._paper.clientToLocalPoint({ x: clientX, y: clientY });
@@ -189,6 +207,18 @@ export class JointService implements OnDestroy {
     this._graph.off('remove');
   }
 
+  public removeCells = (idsToRemove: ID[]) => {
+    if (!this._graph) return;
+    const cellsToRemove = this._graph.getCells().filter((cell) => idsToRemove.includes(cell.id));
+    this._graph.removeCells(cellsToRemove);
+  };
+
+  public removeCellById = (idToRemove: ID) => {
+    if (!this._graph) return;
+    const cellsToRemove = this._graph.getCell(idToRemove);
+    this._graph.removeCells([cellsToRemove]);
+  };
+
   private getSelectedIds(): ID[] {
     return this.selectedCells$.value ?? [];
   }
@@ -201,11 +231,6 @@ export class JointService implements OnDestroy {
     console.log('---------------------------------------------------');
   };
 
-  private removeCells = (idsToRemove: ID[]) => {
-    if (!this._graph) return;
-    const cellsToRemove = this._graph.getCells().filter((cell) => idsToRemove.includes(cell.id));
-    this._graph.removeCells(cellsToRemove);
-  };
   private initGraph(): dia.Graph | void {
     this._graph = new dia.Graph({}, { cellNamespace: shapes });
   }
@@ -219,7 +244,27 @@ export class JointService implements OnDestroy {
   }
   private initToolTips(): void {
     const boundaryTool = new elementTools.Boundary();
-    const removeButton = new elementTools.Remove();
+
+    const removeButton = new elementTools.Remove({
+      action: (evt: dia.Event, view: dia.ElementView) => {
+        evt.preventDefault();
+        evt.stopPropagation();
+
+        this._dialogService
+          .confirm({
+            title: 'Delete cell',
+            message: 'Are you sure you want to delete this cell? This action cannot be undone.',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+          })
+          .subscribe((ok) => {
+            if (ok) {
+              this.removeCellById(view.model.id);
+            }
+          });
+      },
+    });
+
     const resizeButton = new ResizeControl();
 
     const settingsButton = new elementTools.Button({
@@ -562,8 +607,19 @@ export class JointService implements OnDestroy {
       this._multiBoxDeleteButton.addEventListener('touchstart', consume, { passive: false });
 
       this._multiBoxDeleteButton.addEventListener('click', () => {
-        this.removeCells(this.selectedCells$.value);
-        this.removeMultiSelectionBox();
+        this._dialogService
+          .confirm({
+            title: 'Delete cells',
+            message: 'Are you sure you want to delete these cells? This action cannot be undone.',
+            confirmText: 'Delete All',
+            cancelText: 'Cancel',
+          })
+          .subscribe((ok) => {
+            if (ok) {
+              this.removeCells(this.selectedCells$.value);
+              this.removeMultiSelectionBox();
+            }
+          });
       });
 
       this._multiBoxDeleteButton.appendChild(circle);
@@ -810,14 +866,6 @@ export class JointService implements OnDestroy {
   /*  private onGraphUpdate = (cell: dia.Cell, opt: dia.Cell.Options) => {
 
   };*/
-
-  /*
-public removeCell(cellId: string): void {}
-*/
-
-  /*
-  public duplicateCell(cellId: string): void {}
-*/
 
   /*  public exportAsJson(): string | void {}
 

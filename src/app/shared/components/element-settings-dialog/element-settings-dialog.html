@@ -1,7 +1,7 @@
 <mat-dialog-content class="list">
   <mat-action-list>
     <button mat-list-item>Save as Draft</button>
-    <button class="danger" mat-list-item>Delete</button>
-    <button mat-list-item>Duplicate</button>
+    <button (click)="this.deleteCell()" class="danger" mat-list-item>Delete</button>
+    <button (click)="this.duplicateCell()" mat-list-item>Duplicate</button>
   </mat-action-list>
 </mat-dialog-content>
