@@ -1,6 +1,7 @@
 import { Component, HostListener, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { JointService } from './core/services/jointService';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-root',
@@ -20,9 +21,12 @@ export class App {
     }
   }*/
 
+  private readonly dialog = inject(MatDialog);
+
   private readonly jointService = inject(JointService);
   @HostListener('window:keydown', ['$event'])
   onDocKeydown(e: KeyboardEvent) {
+    if (this.dialog.openDialogs.length) return;
     e.preventDefault();
     this.jointService.triggerKeyboardAction(e);
   }
