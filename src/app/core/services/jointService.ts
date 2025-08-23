@@ -12,6 +12,7 @@ import { DialogService } from './dialogService';
 import { ElementSettingsDialog } from '../../shared/components/element-settings-dialog/element-settings-dialog';
 import { CustomElement } from '../Infrastructure/CustomElement';
 import { HistoryService } from './historyService';
+import { BaseUtility } from '../utilities/BaseUtility';
 
 @Injectable({
   providedIn: 'root',
@@ -29,6 +30,7 @@ export class JointService implements OnDestroy {
     width: JOINT_CONSTRAINTS.paperDefaultDimensions.width,
     height: JOINT_CONSTRAINTS.paperDefaultDimensions.height,
   };
+
   private _groupDragActive = false;
   private _groupDragStart: { x: number; y: number } | null = null;
   private _groupBasePos = new Map<ID, { x: number; y: number }>();
@@ -52,13 +54,12 @@ export class JointService implements OnDestroy {
   constructor() {
     this.selectedCells$
       .pipe(
-        distinctUntilChanged((a, b) => this.arraysEqual(a, b)),
+        distinctUntilChanged((a, b) => BaseUtility.arraysEqual(a, b)),
         pairwise(),
       )
       .subscribe(([prevIds, currIds]) => {
         const prevSet = new Set(prevIds);
         const currSet = new Set(currIds);
-        this.printSelectedCellsForDebug(prevIds, currIds);
         this.updateMultiSelectionBox(currIds);
 
         for (const id of prevIds) {
@@ -234,14 +235,9 @@ export class JointService implements OnDestroy {
     this.selectSingle(newCell.id);
   }
 
-  public clientToLocal(clientX: number, clientY: number) {
-    if (!this._paper) throw new Error('No _paper or _graph found.');
-    return this._paper.clientToLocalPoint({ x: clientX, y: clientY });
-  }
-
   public importJSON = async (file: File) => {
     if (!this._graph) return;
-    const JSONObject = await this.parseJsonFile(file);
+    const JSONObject = await BaseUtility.parseJsonFile(file);
     this._graph.fromJSON(JSONObject);
     this.parseTitleFromGraph();
   };
@@ -250,14 +246,7 @@ export class JointService implements OnDestroy {
     if (!this._graph) return;
     this.parseTitleToGraph();
     const jsonObject = this._graph.toJSON();
-    const jsonString = JSON.stringify(jsonObject, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const link = document.createElement('a');
-    link.download = (this.title() || 'Untitled') + '.json';
-    link.href = URL.createObjectURL(blob);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    await BaseUtility.exportJSONHelper(jsonObject, this.title());
   };
 
   public ngOnDestroy(): void {
@@ -305,43 +294,9 @@ export class JointService implements OnDestroy {
     this.title.set(title);
   }
 
-  private parseJsonFile = async (file: File): Promise<unknown> => {
-    return new Promise((resolve, reject) => {
-      const fileReader = new FileReader();
-
-      fileReader.onload = (event: ProgressEvent<FileReader>) => {
-        const reader = event.target;
-        if (!reader) {
-          reject(new Error('No FileReader target'));
-          return;
-        }
-        try {
-          const text = reader.result as string;
-          resolve(JSON.parse(text));
-        } catch (err) {
-          reject(err);
-        }
-      };
-
-      fileReader.onerror = (event: ProgressEvent<FileReader>) => {
-        reject(event.target?.error ?? new Error('FileReader error'));
-      };
-
-      fileReader.readAsText(file);
-    });
-  };
-
   private getSelectedIds(): ID[] {
     return this.selectedCells$.value ?? [];
   }
-
-  private printSelectedCellsForDebug = (prevIds: ID[], currIds: ID[]) => {
-    console.log('Previous:');
-    console.log(prevIds);
-    console.log('Current:');
-    console.log(currIds);
-    console.log('---------------------------------------------------');
-  };
 
   private initGraph(): dia.Graph | void {
     this._graph = new dia.Graph({}, { cellNamespace: this.namespace });
@@ -421,6 +376,14 @@ export class JointService implements OnDestroy {
       tools: [boundaryTool, removeButton, resizeButton, settingsButton],
     });
   }
+
+  private showToolView = (cellView: dia.CellView) => {
+    if (!this.selectedCells$.value.find((id) => id == cellView.model.id)) {
+      this.selectSingle(cellView.model.id);
+    }
+    cellView.addTools(this.toolsView);
+  };
+
   private bindPaperEvents(): void {
     if (!this._paper || !this._graph) throw new Error('No _paper or _graph found.');
 
@@ -465,11 +428,6 @@ export class JointService implements OnDestroy {
     this._multiBoxG = undefined;
     this._multiBoxDeleteButton = undefined;
     this._multiBoxRect = undefined;
-  }
-  private arraysEqual(a: ID[], b: ID[]) {
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-    return true;
   }
 
   private onElementPointerDown = (
@@ -833,13 +791,6 @@ export class JointService implements OnDestroy {
     this.updateMultiSelectionBox(this.getSelectedIds());
   }
 
-  private showToolView = (cellView: dia.CellView) => {
-    if (!this.selectedCells$.value.find((id) => id == cellView.model.id)) {
-      this.selectSingle(cellView.model.id);
-    }
-    cellView.addTools(this.toolsView);
-  };
-
   private beginGroupResize() {
     if (!this._paper || !this._graph) return;
 
@@ -876,7 +827,8 @@ export class JointService implements OnDestroy {
 
     // Attach move/up listeners on the document so dragging stays smooth
     const onMove = (ev: MouseEvent | Touch) => {
-      const { x, y } = this.clientToLocal(ev.clientX, ev.clientY);
+      if (!this._paper) return;
+      const { x, y } = BaseUtility.clientToLocal(ev.clientX, ev.clientY, this._paper);
       this.performGroupResize(x, y);
     };
     const onMouseMove = (e: MouseEvent) => onMove(e);
