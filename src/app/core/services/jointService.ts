@@ -88,6 +88,11 @@ export class JointService implements OnDestroy {
     return this._toolsView;
   }
 
+  public clientToLocal(clientX: number, clientY: number) {
+    if (!this._paper) throw new Error('No paper on clientToLocal');
+    return this._paper?.clientToLocalPoint({ x: clientX, y: clientY });
+  }
+
   public setTitle(v: string) {
     this.title.set(v);
   }
@@ -201,6 +206,7 @@ export class JointService implements OnDestroy {
     cell.attr('path/stroke', JOINT_CONSTRAINTS.primaryStroke);
     cell.attr('top/stroke', JOINT_CONSTRAINTS.primaryStroke);
   }
+
   public unhighlightCell(cellId: ID): void {
     const cellView = this.getCellView(cellId);
     cellView.removeTools();
@@ -828,7 +834,7 @@ export class JointService implements OnDestroy {
     // Attach move/up listeners on the document so dragging stays smooth
     const onMove = (ev: MouseEvent | Touch) => {
       if (!this._paper) return;
-      const { x, y } = BaseUtility.clientToLocal(ev.clientX, ev.clientY, this._paper);
+      const { x, y } = this.clientToLocal(ev.clientX, ev.clientY);
       this.performGroupResize(x, y);
     };
     const onMouseMove = (e: MouseEvent) => onMove(e);

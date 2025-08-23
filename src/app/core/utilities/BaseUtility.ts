@@ -2,10 +2,6 @@ import { dia } from '@joint/core';
 import ID = dia.Cell.ID;
 
 export class BaseUtility {
-  public static clientToLocal(clientX: number, clientY: number, paper: dia.Paper) {
-    return paper.clientToLocalPoint({ x: clientX, y: clientY });
-  }
-
   public static parseJsonFile = async (file: File): Promise<unknown> => {
     return new Promise((resolve, reject) => {
       const fileReader = new FileReader();
