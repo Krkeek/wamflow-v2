@@ -89,7 +89,7 @@ export class JointService implements OnDestroy {
   }
 
   public triggerKeyboardAction(e: KeyboardEvent) {
-    if (!this._graph) return;
+    if (!this._graph || this.selectedCells$.value.length === 0) return;
     if (e.key === 'Backspace' || e.key === 'Delete') {
       this._dialogService
         .confirm({
@@ -98,8 +98,9 @@ export class JointService implements OnDestroy {
             this.selectedCells$.value.length < 2
               ? 'Are you sure you want to delete this cell? This action cannot be undone.'
               : 'Are you sure you want to delete these cells? This action cannot be undone.',
-          confirmText: 'Delete',
+          confirmText: this.selectedCells$.value.length < 2 ? 'Delete' : 'Delete All',
           cancelText: 'Cancel',
+          confirmColor: 'danger',
         })
         .subscribe((ok) => {
           if (ok) {
@@ -301,6 +302,7 @@ export class JointService implements OnDestroy {
             message: 'Are you sure you want to delete this cell? This action cannot be undone.',
             confirmText: 'Delete',
             cancelText: 'Cancel',
+            confirmColor: 'danger',
           })
           .subscribe((ok) => {
             if (ok) {
@@ -648,6 +650,7 @@ export class JointService implements OnDestroy {
             message: 'Are you sure you want to delete these cells? This action cannot be undone.',
             confirmText: 'Delete All',
             cancelText: 'Cancel',
+            confirmColor: 'danger',
           })
           .subscribe((ok) => {
             if (ok) {

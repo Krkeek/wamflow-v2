@@ -1,4 +1,4 @@
-import { Component, HostListener, inject } from '@angular/core';
+import { Component, HostBinding, HostListener, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -13,8 +13,8 @@ export interface ConfirmOptions {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  confirmColor?: 'primary' | 'danger';
 }
-
 @Component({
   selector: 'app-confirmation-dialog',
   imports: [MatDialogTitle, MatDialogContent, MatDialogActions, MatButtonModule],
@@ -22,7 +22,7 @@ export interface ConfirmOptions {
   styleUrl: './confirmation-dialog.css',
 })
 export class ConfirmationDialog {
-  readonly data = inject<ConfirmOptions>(MAT_DIALOG_DATA);
+  protected readonly data = inject<ConfirmOptions>(MAT_DIALOG_DATA);
   private readonly ref = inject(MatDialogRef<ConfirmationDialog, boolean>);
 
   @HostListener('window:keydown', ['$event'])

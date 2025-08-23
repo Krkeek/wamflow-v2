@@ -31,6 +31,7 @@ export class ElementSettingsDialog {
         message: 'Are you sure you want to delete this cell? This action cannot be undone.',
         confirmText: 'Delete',
         cancelText: 'Cancel',
+        confirmColor: 'danger',
       })
       .subscribe((ok) => {
         if (ok) {

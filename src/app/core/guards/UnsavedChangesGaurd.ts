@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { CanDeactivate } from '@angular/router';
-import { UnsavedChangesService } from '../services/UnsavedChangesService';
+import { UnsavedChangesService } from '../services/unsavedChangesService';
 
 @Injectable({ providedIn: 'root' })
 export class UnsavedChangesGuard implements CanDeactivate<boolean> {
