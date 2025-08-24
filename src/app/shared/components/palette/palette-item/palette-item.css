@@ -5,9 +5,15 @@
 }
 
 .canvas-container {
-  cursor: move;
+  display: inline-block;
+  cursor: grab;
 }
 
-.canvas  {
+.canvas {
+  width: 96px;
+  height: 96px;
+  display: block;
+  position: relative;
   pointer-events: none !important;
+
 }

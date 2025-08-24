@@ -62,3 +62,25 @@ mat-dialog-container {
   border-radius: var(--defaultBorderRadius) !important;
   background-color: white !important;
 }
+
+
+/* Palettes */
+$my-primary: mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
+$my-accent:  mat.m2-define-palette(mat.$m2-blue-palette, 900); // ≈ #0d47a1
+$my-warn:    mat.m2-define-palette(mat.$m2-red-palette, 600);
+
+/* Theme */
+$my-theme: mat.m2-define-light-theme((
+  color: (
+    primary: $my-primary,
+    accent:  $my-accent,
+    warn:    $my-warn,
+  )
+));
+
+@include mat.all-component-themes($my-theme);
+
+/* Optional: nudge accent to your exact hex for MDC tokens */
+:root {
+  --mdc-theme-secondary: #023E8A; /* used by many MDC components */
+}

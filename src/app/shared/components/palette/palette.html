@@ -1,6 +1,22 @@
-@for (element of elements; track $index) {
-  <div class="palette-item">
-    <app-palette-item [element]="element" />
-    <div class="Line"></div>
-  </div>
-}
+<mat-tab-group mat-align-tabs="start">
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon matTooltip="Elements">widgets</mat-icon>
+    </ng-template>
+    <div class="elementsPalette">
+      @for (element of elements; track $index) {
+        <div class="palette-item">
+          <app-palette-item [element]="element" />
+          <div class="Line"></div>
+        </div>
+      }
+    </div>
+  </mat-tab>
+
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon matTooltip="Links">link</mat-icon>
+    </ng-template>
+    Content 2
+  </mat-tab>
+</mat-tab-group>

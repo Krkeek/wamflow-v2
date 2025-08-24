@@ -15,12 +15,12 @@ export class PaletteItem implements AfterViewInit {
   private readonly jointService = inject(JointService);
 
   ngAfterViewInit() {
-    if (this.canvas && this.canvas.nativeElement) {
-      const { graph, paper } = this.jointService.initPalettePaper(this.canvas.nativeElement);
+    if (!this.canvas) throw new Error('Canvas not initialized');
+    queueMicrotask(() => {
+      const host = this.canvas!.nativeElement;
+      const { graph, paper } = this.jointService.initPalettePaper(host);
       this.jointService.addCell(this.element(), graph, paper);
-    } else {
-      throw new Error('Canvas not initialized');
-    }
+    });
   }
 
   onDragStart(e: DragEvent) {

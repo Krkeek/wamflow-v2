@@ -8,6 +8,7 @@ import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatButton } from '@angular/material/button';
 import { MatInput } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-sheet-header',
@@ -22,6 +23,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
     MatLabel,
     MatButton,
     MatInput,
+    MatTooltip,
   ],
   templateUrl: './sheet-header.html',
   styleUrl: './sheet-header.css',

@@ -1,11 +1,17 @@
 <div class="container">
   <div>
-    <input [(ngModel)]="title" [disabled]="!ready()" class="title" placeholder="Untitled Diagram" />
+    <input
+      [(ngModel)]="title"
+      [disabled]="!ready()"
+      class="title"
+      matTooltip="Diagram Title"
+      placeholder="Untitled"
+    />
   </div>
   <div></div>
 
   <div>
-    <button [matMenuTriggerFor]="menu" class="settingDiv">
+    <button [matMenuTriggerFor]="menu" class="settingDiv" matTooltip="Settings">
       <mat-icon>settings</mat-icon>
     </button>
 

@@ -33,3 +33,8 @@
   height: 1px;
   background-color: var(--defaultText-color);
 }
+
+
+::ng-deep .mat-mdc-tab.mdc-tab {
+  min-width: 0;
+}
