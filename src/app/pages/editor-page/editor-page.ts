@@ -31,13 +31,16 @@ export class EditorPage implements AfterViewInit {
 
   onDrop(evt: DragEvent) {
     evt.preventDefault();
+
     if (!evt.dataTransfer) throw new Error('evt.dataTransfer is null');
 
     const elementToDrag = evt.dataTransfer.getData('elementToDrag');
     if (!elementToDrag) return;
     const element = elementToDrag as WamElements;
 
+    const customDimensions = this.jointService.checkForCustomDimensions(element);
+
     const pt = this.jointService.clientToLocal(evt.clientX, evt.clientY);
-    this.jointService.addCellAt(element, pt.x, pt.y);
+    this.jointService.addCellAt(element, pt.x, pt.y, customDimensions);
   }
 }

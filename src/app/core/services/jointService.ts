@@ -206,6 +206,10 @@ export class JointService implements OnDestroy {
     const newCell = this._elementCreatorService.create(cell);
 
     if (specificGraph) {
+      newCell.attr({
+        body: { fill: JOINT_CONSTRAINTS.defaultPaletteFill },
+        path: { fill: JOINT_CONSTRAINTS.defaultPaletteFill },
+      });
       newCell.position(20, 10);
       newCell.addTo(specificGraph);
       specificPaper?.fitToContent({
@@ -220,11 +224,19 @@ export class JointService implements OnDestroy {
     }
   }
 
-  public addCellAt(cell: WamElements, x: number, y: number) {
+  public addCellAt(
+    cell: WamElements,
+    x: number,
+    y: number,
+    dimensions?: { width: number; height: number },
+  ) {
     if (!this._graph || !this._paper) return;
     this._historyService.snapshot(this._graph);
     const el = this._elementCreatorService.create(cell);
+
     const { width, height } = el.size();
+
+    if (dimensions) el.resize(dimensions.width, dimensions.height);
     el.position(x - width / 2, y - height / 2);
     el.addTo(this._graph);
     this.selectSingle(el.id);
@@ -329,7 +341,9 @@ export class JointService implements OnDestroy {
     const cellsToRemove = this._graph.getCell(idToRemove);
     this._graph.removeCells([cellsToRemove]);
   };
-
+  public checkForCustomDimensions(element: WamElements) {
+    return element === WamElements.SecurityRealm ? { width: 500, height: 300 } : undefined;
+  }
   private parseTitleToGraph() {
     this._graph?.set('title', this.title());
   }
