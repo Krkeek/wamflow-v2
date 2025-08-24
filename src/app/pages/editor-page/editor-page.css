@@ -12,20 +12,22 @@
 }
 
 .content-div {
-  height: 90%;
+  padding-top: 1vh;
+  box-sizing: border-box;
+  height: 100%;
   display: flex;
   width: 100%;
 }
 
 .left-side {
-  width: 10%;
+  width: 9%;
   display: flex !important;
   justify-content: center;
   align-items: flex-start;
 }
 
 .middle {
-  width: 70%;
+  width: 71%;
   height: 98%;
   border-radius: var(--defaultBorderRadius);
 }
@@ -44,15 +46,14 @@
 }
 
 .sheet-title {
-  text-align: center;
   background: var(--ancientTwo-color);
   height: 4%;
   color: var(--textTwo-color);
   font-size: 0.9rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   border-top-left-radius: var(--defaultBorderRadius);
   border-top-right-radius: var(--defaultBorderRadius);
+  padding: 0 0.5rem;
+  box-sizing: border-box;
 
 }
+

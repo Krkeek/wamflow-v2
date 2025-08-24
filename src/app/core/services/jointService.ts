@@ -13,6 +13,7 @@ import { ElementSettingsDialog } from '../../shared/components/element-settings-
 import { CustomElement } from '../Infrastructure/CustomElement';
 import { HistoryService } from './historyService';
 import { BaseUtility } from '../utilities/BaseUtility';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Injectable({
   providedIn: 'root',
@@ -21,15 +22,17 @@ export class JointService implements OnDestroy {
   public selectedCells$ = new BehaviorSubject<ID[]>([]);
   public readonly ready = signal(false);
   public readonly title = signal('');
+  public readonly paperDimensions = signal<{ width: number; height: number }>({
+    width: 4000,
+    height: 4000,
+  });
   private readonly _elementCreatorService = inject(ElementCreatorService);
   private readonly _dialogService = inject(DialogService);
   private readonly _historyService = inject(HistoryService);
+  private readonly _snackBar = inject(MatSnackBar);
+
   private _graph?: dia.Graph;
   private _paper?: dia.Paper;
-  private _paperDimensions = {
-    width: JOINT_CONSTRAINTS.paperDefaultDimensions.width,
-    height: JOINT_CONSTRAINTS.paperDefaultDimensions.height,
-  };
 
   private _groupDragActive = false;
   private _groupDragStart: { x: number; y: number } | null = null;
@@ -130,15 +133,19 @@ export class JointService implements OnDestroy {
     }
   }
 
+  public updatePaperDimensions(width: number, height: number) {
+    this._paper?.setDimensions(width, height);
+  }
+
   public initPaper(canvas: HTMLElement): void {
     this.initGraph();
     this._paper = new dia.Paper({
       el: canvas,
       model: this._graph,
-      width: this._paperDimensions.width,
-      height: this._paperDimensions.height,
+      width: this.paperDimensions().width,
+      height: this.paperDimensions().height,
       gridSize: 10,
-      drawGridSize: 40,
+      drawGridSize: 30,
       drawGrid: {
         name: 'mesh',
         args: { color: '#bdbdbd', thickness: 1 },
@@ -155,6 +162,31 @@ export class JointService implements OnDestroy {
     this.initToolTips();
     this.bindPaperEvents();
     this.ready.set(true);
+  }
+
+  public resetPaper(): void {
+    if (!this._graph) return;
+
+    if (this._graph.getCells().length === 0) {
+      this._snackBar.open('The sheet is already empty', 'Dismiss', { duration: 3000 });
+      return;
+    }
+
+    this._dialogService
+      .confirm({
+        title: 'Reset Diagram',
+        message: 'Are you sure you want to reset the diagram? This action cannot be undone.',
+        confirmText: 'Reset',
+        cancelText: 'Cancel',
+        confirmColor: 'danger',
+      })
+      .subscribe((ok) => {
+        if (ok) {
+          if (!this._graph) return;
+          this._graph.clear();
+          this._snackBar.open('Sheet cleared successfully', 'Dismiss', { duration: 3000 });
+        }
+      });
   }
 
   public initPalettePaper(canvas: HTMLElement): { graph: dia.Graph; paper: dia.Paper } {
@@ -246,13 +278,20 @@ export class JointService implements OnDestroy {
     const JSONObject = await BaseUtility.parseJsonFile(file);
     this._graph.fromJSON(JSONObject);
     this.parseTitleFromGraph();
+    this._snackBar.open('Diagram imported successfully', 'Dismiss', { duration: 2500 });
   };
 
   public exportJSON = async () => {
-    if (!this._graph) return;
+    if (!this._graph || this._graph.getCells().length === 0) {
+      this._snackBar.open('The sheet is empty', 'Dismiss', { duration: 3000 });
+      return;
+    }
+
     this.parseTitleToGraph();
     const jsonObject = this._graph.toJSON();
     await BaseUtility.exportJSONHelper(jsonObject, this.title());
+
+    this._snackBar.open('Diagram exported as JSON', 'Dismiss', { duration: 2500 });
   };
 
   public ngOnDestroy(): void {

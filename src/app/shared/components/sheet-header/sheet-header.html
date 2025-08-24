@@ -1,0 +1,91 @@
+<div class="container">
+  <div>
+    <input [(ngModel)]="title" [disabled]="!ready()" class="title" placeholder="Untitled Diagram" />
+  </div>
+  <div></div>
+
+  <div>
+    <button [matMenuTriggerFor]="menu" class="settingDiv">
+      <mat-icon>settings</mat-icon>
+    </button>
+
+    <mat-menu #menu="matMenu">
+      <button mat-menu-item>Save</button>
+      <button (click)="resetPaper()" mat-menu-item>Reset</button>
+      <button [matMenuTriggerFor]="dimensionsMenu" mat-menu-item>Dimensions</button>
+      <button [matMenuTriggerFor]="showMenu" mat-menu-item>Show</button>
+
+      <button [matMenuTriggerFor]="exportMenu" mat-menu-item>Export as</button>
+      <button [matMenuTriggerFor]="importMenu" mat-menu-item>Import as</button>
+    </mat-menu>
+
+    <mat-menu #exportMenu="matMenu">
+      <button (click)="exportJSON()" mat-menu-item>JSON</button>
+      <button mat-menu-item>PNG</button>
+      <button mat-menu-item>RDF</button>
+    </mat-menu>
+
+    <mat-menu #importMenu="matMenu">
+      <button (click)="openFilePicker()" mat-menu-item>JSON</button>
+    </mat-menu>
+    <mat-menu #showMenu="matMenu">
+      <button mat-menu-item>
+        <mat-checkbox (click)="$event.stopPropagation()">Names</mat-checkbox>
+      </button>
+      <button mat-menu-item>
+        <mat-checkbox (click)="$event.stopPropagation()">URIs</mat-checkbox>
+      </button>
+      <button mat-menu-item>
+        <mat-checkbox (click)="$event.stopPropagation()">Links Labels</mat-checkbox>
+      </button>
+    </mat-menu>
+
+    <mat-menu #dimensionsMenu="matMenu" [overlapTrigger]="false">
+      <div
+        (click)="$event.stopPropagation()"
+        (keydown)="$event.stopPropagation()"
+        (mousedown)="$event.stopPropagation()"
+        aria-label="Dimensions editor"
+        class="menuForm"
+        role="group"
+        tabindex="0"
+      >
+        <mat-form-field appearance="fill" class="field">
+          <mat-label>Width (px)</mat-label>
+          <input
+            (ngModelChange)="updatePaperWidth($event)"
+            [ngModel]="paperDimensions.width"
+            matInput
+            max="10000"
+            min="1920"
+            step="10"
+            type="number"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="field">
+          <mat-label>Height (px)</mat-label>
+          <input
+            (ngModelChange)="updatePaperHeight($event)"
+            [ngModel]="paperDimensions.height"
+            matInput
+            max="10000"
+            min="1080"
+            step="10"
+            type="number"
+          />
+        </mat-form-field>
+
+        <div class="rowPresets">
+          <button (click)="updatePaperDimensions(1920, 1080)" mat-stroked-button>1920×1080</button>
+          <button (click)="updatePaperDimensions(2000, 2000)" mat-stroked-button>2k</button>
+          <button (click)="updatePaperDimensions(4000, 4000)" mat-stroked-button>4k</button>
+          <button (click)="updatePaperDimensions(4000, 4000)" mat-stroked-button>
+            Reset Default
+          </button>
+        </div>
+      </div>
+    </mat-menu>
+  </div>
+  <input #fileInput (change)="onFileChange($event)" accept=".json" class="InputFile" type="file" />
+</div>

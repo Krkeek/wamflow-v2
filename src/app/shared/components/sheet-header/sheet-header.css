@@ -1,0 +1,75 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%
+
+}
+.settingDiv {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  cursor: pointer;
+  background: none;
+}
+
+
+.settingDiv:hover {
+  background-color: transparent;
+}
+
+.settingDiv mat-icon {
+  border-radius: 50%;
+  padding: 0.2rem;
+  transition: background-color 0.3s ease ;
+}
+
+.settingDiv mat-icon:hover {
+  background-color: rgba(0, 0, 0, 0.1); /* circle hover bg */
+  cursor: pointer;
+  transition: background-color 0.3s ease ;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  font: inherit;
+  background: transparent;
+  font-size: 1.2rem;
+  padding-left: 0.5rem;
+}
+
+.menuForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.rowPresets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-start;
+}
+
+.rowPresets button {
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+
+.InputFile {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+}

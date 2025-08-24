@@ -1,13 +1,12 @@
 <div class="section">
-  <div class="top-bar">
-    <app-header-panel />
-  </div>
   <div class="content-div">
     <div class="left-side">
       <app-palette />
     </div>
     <div class="middle">
-      <div class="sheet-title">Drop Sheet</div>
+      <div class="sheet-title">
+        <app-sheet-header />
+      </div>
       <div class="sheet">
         <div #canvas (dragover)="onDragOver($event)" (drop)="onDrop($event)" class="canvas"></div>
       </div>

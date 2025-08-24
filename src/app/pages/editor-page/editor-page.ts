@@ -2,11 +2,12 @@ import { AfterViewInit, Component, ElementRef, inject, ViewChild } from '@angula
 import { JointService } from '../../core/services/jointService';
 import { Palette } from '../../shared/components/palette/palette';
 import { WamElements } from '../../core/enums/WamElements';
-import { HeaderPanel } from '../../shared/components/header-panel/header-panel';
+import { MatIconModule } from '@angular/material/icon';
+import { SheetHeader } from '../../shared/components/sheet-header/sheet-header';
 
 @Component({
   selector: 'app-editor-page',
-  imports: [Palette, HeaderPanel],
+  imports: [Palette, MatIconModule, SheetHeader],
   templateUrl: './editor-page.html',
   styleUrl: './editor-page.css',
 })
