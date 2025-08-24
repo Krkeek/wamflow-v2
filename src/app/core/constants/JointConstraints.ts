@@ -4,7 +4,7 @@ export const JOINT_CONSTRAINTS = {
   defaultStroke: '#000',
   warningFill: '#FFF3CD',
   infoFill: '#D1ECF1',
-  primaryStroke: '#023E8A',
+  primaryStroke: '#1E88E5',
   paperBackground: 'white',
   textColor: 'black',
   strokeWidth: 2.5,

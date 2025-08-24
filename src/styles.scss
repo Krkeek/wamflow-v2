@@ -21,7 +21,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root{
-  --ancient--color: #023E8A;
+  --ancient--color: #1E88E5;
   --ancientTwo-color: #E9ECEF;
   --defaultText-color: black;
   --defaultTextButton-color: white;
@@ -66,7 +66,7 @@ mat-dialog-container {
 
 /* Palettes */
 $my-primary: mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
-$my-accent:  mat.m2-define-palette(mat.$m2-blue-palette, 900); // ≈ #0d47a1
+$my-accent:  mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
 $my-warn:    mat.m2-define-palette(mat.$m2-red-palette, 600);
 
 /* Theme */
@@ -80,7 +80,3 @@ $my-theme: mat.m2-define-light-theme((
 
 @include mat.all-component-themes($my-theme);
 
-/* Optional: nudge accent to your exact hex for MDC tokens */
-:root {
-  --mdc-theme-secondary: #023E8A; /* used by many MDC components */
-}

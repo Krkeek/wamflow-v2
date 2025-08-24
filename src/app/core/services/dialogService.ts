@@ -19,7 +19,6 @@ export class DialogService {
   ) {
     return this.dialog.open<T, D, R>(component, {
       ...config,
-      minHeight: '20vh',
     });
   }
 

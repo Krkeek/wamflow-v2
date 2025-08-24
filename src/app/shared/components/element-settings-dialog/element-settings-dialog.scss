@@ -1,15 +1,10 @@
-.list{
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
 
 
 
 ::ng-deep .dialog-container .mat-mdc-list-item {
-  padding-left: 1.5rem !important;
-  box-sizing: border-box !important;
+
 }
 
 ::ng-deep .dialog-container .mat-mdc-list-item.danger .mdc-list-item__primary-text {
-  color: red ;
+
 }
