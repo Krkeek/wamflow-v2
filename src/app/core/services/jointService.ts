@@ -397,32 +397,25 @@ export class JointService implements OnDestroy {
     const settingsButton = new elementTools.Button({
       x: '99%',
       y: '1%',
-      markup: [
-        {
-          tagName: 'circle',
-          selector: 'button',
-          attributes: {
-            r: 7,
-            fill: 'gray',
-            cursor: 'pointer',
-          },
-        },
-        {
-          tagName: 'text',
-          selector: 'icon',
-          attributes: {
-            x: 0,
-            y: 1,
-            'text-anchor': 'middle',
-            'dominant-baseline': 'middle',
-            'font-size': 10,
-            'font-weight': 'bold',
-            fill: '#333',
-            'pointer-events': 'none',
-          },
-        },
-      ],
-      icon: { icon: '⚙' },
+      markup: [{
+        tagName: 'circle',
+        selector: 'button',
+        attributes: {
+          'r': 7,
+          'fill': 'black',
+          'cursor': 'pointer'
+        }
+      }, {
+        tagName: 'path',
+        selector: 'icon',
+        attributes: {
+          'd': 'M -2 4 2 4 M 0 3 0 0 M -2 -1 1 -1 M -1 -4 1 -4',
+          'fill': 'none',
+          'stroke': '#FFFFFF',
+          'stroke-width': 2,
+          'pointer-events': 'none'
+        }
+      }],
       action: (evt: dia.Event, view: dia.ElementView) => {
         this._dialogService.openDialog(ElementSettingsDialog, {
           data: { view: view, evt: evt },
