@@ -1,5 +1,5 @@
 import { inject, Injectable, OnDestroy, signal } from '@angular/core';
-import { dia, elementTools, g, shapes } from '@joint/core';
+import { dia, elementTools, g, linkTools, shapes } from '@joint/core';
 import { WamElements } from '../enums/WamElements';
 import { ElementCreatorService } from './elementCreatorService';
 import { JOINT_CONSTRAINTS } from '../constants/JointConstraints';
@@ -83,12 +83,20 @@ export class JointService implements OnDestroy {
   }
 
   private _toolsView?: ToolsView;
+  private _toolsViewLinks?: ToolsView;
 
   private get toolsView(): ToolsView {
     if (!this._toolsView) {
       throw new Error('No tools view found.');
     }
     return this._toolsView;
+  }
+
+  private get toolsViewLinks(): ToolsView {
+    if (!this._toolsViewLinks) {
+      throw new Error('No tools view found.');
+    }
+    return this._toolsViewLinks;
   }
 
   public clientToLocal(clientX: number, clientY: number) {
@@ -155,8 +163,36 @@ export class JointService implements OnDestroy {
       defaultConnectionPoint: { name: 'boundary' },
       restrictTranslate: true,
       embeddingMode: true,
-      highlighting: { embedding: false },
       validateConnection: (s, _m, t) => s !== t,
+
+      highlighting: {
+        default: {
+          name: 'stroke',
+          options: {
+            padding: 8,
+            rx: 6,
+            ry: 6,
+            attrs: {
+              'stroke': JOINT_CONSTRAINTS.primaryStroke,
+              'stroke-width': 2,
+              'stroke-dasharray': '4,2'
+            }
+          }
+        },
+        connecting: {
+          name: 'stroke',
+          options: {
+            padding: 20,
+            attrs: {
+              'stroke': JOINT_CONSTRAINTS.primaryStroke,
+              'stroke-width': 1,
+              'stroke-dasharray': '2'
+            }
+          }
+        }
+      }
+
+
     });
 
     this.initToolTips();
@@ -246,21 +282,39 @@ export class JointService implements OnDestroy {
 
   public highlightCell(cellId: ID): void {
     const cell = this.getCellById(cellId);
-    cell.attr('body/stroke', JOINT_CONSTRAINTS.primaryStroke);
-    cell.attr('path/stroke', JOINT_CONSTRAINTS.primaryStroke);
-    cell.attr('top/stroke', JOINT_CONSTRAINTS.primaryStroke);
+
+    if (!cell) return;
+
+    if (cell.isElement()) {
+      cell.attr('body/stroke', JOINT_CONSTRAINTS.primaryStroke);
+      cell.attr('path/stroke', JOINT_CONSTRAINTS.primaryStroke);
+      cell.attr('top/stroke', JOINT_CONSTRAINTS.primaryStroke);
+    }
+
+    if (cell.isLink()) {
+      cell.attr('line/stroke', JOINT_CONSTRAINTS.primaryStroke);
+    }
   }
 
   public unhighlightCell(cellId: ID): void {
     const cellView = this.getCellView(cellId);
-    cellView.removeTools();
+    if (cellView) {
+      cellView.removeTools();
+    }
 
     const cell = this.getCellById(cellId);
-    cell.attr('body/stroke', JOINT_CONSTRAINTS.defaultStroke);
-    cell.attr('path/stroke', JOINT_CONSTRAINTS.defaultStroke);
-    cell.attr('top/stroke', JOINT_CONSTRAINTS.defaultStroke);
-  }
+    if (!cell) return;
 
+    if (cell.isElement()) {
+      cell.attr('body/stroke', JOINT_CONSTRAINTS.defaultStroke);
+      cell.attr('path/stroke', JOINT_CONSTRAINTS.defaultStroke);
+      cell.attr('top/stroke', JOINT_CONSTRAINTS.defaultStroke);
+    }
+
+    if (cell.isLink()) {
+      cell.attr('line/stroke', JOINT_CONSTRAINTS.defaultStroke);
+    }
+  }
   public getCellById(cellId: ID) {
     const cell = this._graph?.getCell(cellId);
     if (!cell) throw Error(`Unable to get cell ${cellId}`);
@@ -314,13 +368,16 @@ export class JointService implements OnDestroy {
     this._paper.off('element:mouseleave');
     this._paper.off('element:pointermove');
     this._paper.off('element:pointerup');
+    this._paper.off('element:mouseenter');
+    this._paper.off('element:mouseleave');
+    this._paper.off('link:contextmenu');
     this._paper.off('link:pointerdown');
     this._paper.off('link:pointerup');
+    this._paper.off('link:mouseenter');
     this._paper.off('blank:pointerclick');
     this._paper.off('blank:pointerdown');
     this._paper.off('blank:pointerup');
     this._paper.off('blank:pointermove');
-    this._paper.off('link:mouseenter');
     this._paper.off('blank:mouseover');
     this._graph.off('change');
     this._graph.off('add');
@@ -368,9 +425,15 @@ export class JointService implements OnDestroy {
     if (!this._paper) throw new Error('No _paper found.');
     return cell.findView(this._paper);
   }
-  private initToolTips(): void {
-    const boundaryTool = new elementTools.Boundary();
 
+  private setEdgeHighlight(view: dia.ElementView, enabled: boolean): void {
+    if (!view.model) return;
+
+    view.model.attr(['edge', 'stroke'], enabled ? JOINT_CONSTRAINTS.edgeHighlightColor : 'transparent');
+    view.model.attr(['edge', 'cursor'], enabled ? 'crosshair' : 'move');
+  }
+
+  private initToolTips(): void {
     const removeButton = new elementTools.Remove({
       action: (evt: dia.Event, view: dia.ElementView) => {
         evt.preventDefault();
@@ -392,6 +455,15 @@ export class JointService implements OnDestroy {
       },
     });
 
+
+    const verticesTool = new linkTools.Vertices();
+    const segmentsTool = new linkTools.Segments();
+
+    this._toolsViewLinks = new dia.ToolsView({
+      tools: [verticesTool, segmentsTool, removeButton],
+    });
+
+    const boundaryTool = new elementTools.Boundary();
     const resizeButton = new ResizeControl();
 
     const settingsButton = new elementTools.Button({
@@ -430,10 +502,17 @@ export class JointService implements OnDestroy {
   }
 
   private showToolView = (cellView: dia.CellView) => {
-    if (!this.selectedCells$.value.find((id) => id == cellView.model.id)) {
-      this.selectSingle(cellView.model.id);
+    const model = cellView.model;
+
+    if (model.isElement()) {
+      if (!this.selectedCells$.value.find((id) => id == model.id)) {
+        this.selectSingle(model.id);
+      }
+      cellView.addTools(this.toolsView);
     }
-    cellView.addTools(this.toolsView);
+    if (model.isLink()) {
+      cellView.addTools(this.toolsViewLinks);
+    }
   };
 
   private bindPaperEvents(): void {
@@ -444,6 +523,10 @@ export class JointService implements OnDestroy {
     this._paper.on('element:pointermove', this.onElementPointerMove);
     this._paper.on('element:pointerup', this.onElementPointerUp);
     this._paper.on('element:contextmenu', this.onElementContextMenu);
+    this._paper.on('element:mouseenter', this.onElementMouseEnter);
+    this._paper.on('element:mouseleave', this.onElementMouseLeave);
+    this._paper.on('link:contextmenu', this.onLinkContextMenu);
+    this._paper.on('link:pointerdown', this.onLinkPointerDown);
     this._paper.on('blank:pointerclick', this.onBlankPointerClick);
     this._paper.on('blank:pointerdown', this.onBlankPointerDown);
     this._paper.on('blank:pointerup', this.onBlankPointerUp);
@@ -491,6 +574,17 @@ export class JointService implements OnDestroy {
     this.initDraggingCells(elementView, x, y);
   };
 
+
+  private onLinkPointerDown = (elementView: dia.LinkView,) => {
+
+    const ids = this.getSelectedIds();
+    const thisId = String(elementView.model.id);
+
+    if (!ids.includes(thisId)) {
+      this.selectSingle(elementView.model.id);
+    }
+  };
+
   private onElementPointerMove = (
     view: dia.ElementView,
     _evt: dia.Event,
@@ -508,6 +602,19 @@ export class JointService implements OnDestroy {
   private onElementPointerUp = () => {
     this.resetGroupDragConstraints();
   };
+
+  private onElementMouseEnter = (elementView: dia.ElementView) => {
+    this.setEdgeHighlight(elementView, true);
+
+  }
+
+  private onElementMouseLeave = (elementView: dia.ElementView) => {
+    this.setEdgeHighlight(elementView, false);
+  }
+
+  private onLinkContextMenu = (linkView: dia.LinkView) => {
+    this.showToolView(linkView);
+  }
 
   private onBlankPointerClick = () => {
     this.clearAllSelection();

@@ -11,4 +11,5 @@ export const JOINT_CONSTRAINTS = {
   paperDefaultDimensions: { width: 4000, height: 4000 },
   multiBoxSelectorColor: 'black',
   multiBoxSelectorThickness: '0.5',
+  edgeHighlightColor: 'rgba(2,62,138,0.25)',
 };
