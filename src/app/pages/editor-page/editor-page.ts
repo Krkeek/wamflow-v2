@@ -4,10 +4,20 @@ import { Palette } from '../../shared/components/palette/palette';
 import { WamElements } from '../../core/enums/WamElements';
 import { MatIconModule } from '@angular/material/icon';
 import { SheetHeader } from '../../shared/components/sheet-header/sheet-header';
+import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-editor-page',
-  imports: [Palette, MatIconModule, SheetHeader],
+  imports: [
+    MatIconModule,
+    SheetHeader,
+    MatSidenavContainer,
+    MatSidenav,
+    MatSidenavContent,
+    FormsModule,
+    Palette,
+  ],
   templateUrl: './editor-page.html',
   styleUrl: './editor-page.css',
 })
@@ -15,6 +25,7 @@ export class EditorPage implements AfterViewInit {
   @ViewChild('canvas') canvas?: ElementRef<HTMLElement>;
   protected readonly ondragover = ondragover;
   private readonly jointService = inject(JointService);
+  protected opened = true;
 
   ngAfterViewInit() {
     if (this.canvas) {
