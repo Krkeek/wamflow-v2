@@ -9,6 +9,7 @@ import { MatButton } from '@angular/material/button';
 import { MatInput } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltip } from '@angular/material/tooltip';
+import { NavControlService } from '../../../core/services/navControlService';
 
 @Component({
   selector: 'app-sheet-header',
@@ -33,6 +34,7 @@ export class SheetHeader {
   fileInput!: ElementRef<HTMLInputElement>;
 
   private readonly jointService = inject(JointService);
+  protected readonly navControlService = inject(NavControlService);
   private _snackBar = inject(MatSnackBar);
 
   private _dims = this.jointService.paperDimensions(); // { width, height }

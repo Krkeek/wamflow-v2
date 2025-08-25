@@ -1,5 +1,8 @@
 <div class="container">
-  <div>
+  <div class="left-side">
+    <button (click)="this.navControlService.toggle('left')" class="settingDiv" matTooltip="Dock Side Panel">
+      <mat-icon>align_horizontal_right</mat-icon>
+    </button>
     <input
       [(ngModel)]="title"
       [disabled]="!ready()"
@@ -21,6 +24,9 @@
       <button [matMenuTriggerFor]="settings" class="settingDiv" matTooltip="Settings">
         <mat-icon>settings</mat-icon>
       </button>
+      <button (click)="this.navControlService.toggle('right')" class="settingDiv" matTooltip="Dock Side Panel">
+        <mat-icon>align_horizontal_left</mat-icon>
+    </button>
   </div>
   <input #fileInput (change)="onFileChange($event)" accept=".json" class="InputFile" type="file" />
 </div>

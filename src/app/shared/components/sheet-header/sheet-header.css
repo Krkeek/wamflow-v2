@@ -74,8 +74,9 @@
   clip: rect(0 0 0 0);
 }
 
-.right-side {
+.right-side, .left-side {
   display: flex;
   justify-content: center;
   align-items: center;
 }
+

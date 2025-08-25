@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, inject, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { JointService } from '../../core/services/jointService';
 import { Palette } from '../../shared/components/palette/palette';
 import { WamElements } from '../../core/enums/WamElements';
@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { SheetHeader } from '../../shared/components/sheet-header/sheet-header';
 import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
 import { FormsModule } from '@angular/forms';
+import { NavControlService } from '../../core/services/navControlService';
 
 @Component({
   selector: 'app-editor-page',
@@ -21,11 +22,16 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './editor-page.html',
   styleUrl: './editor-page.css',
 })
-export class EditorPage implements AfterViewInit {
+export class EditorPage implements AfterViewInit, OnInit {
   @ViewChild('canvas') canvas?: ElementRef<HTMLElement>;
   protected readonly ondragover = ondragover;
+  private readonly navControlService = inject(NavControlService);
   private readonly jointService = inject(JointService);
-  protected opened = true;
+  protected panelState = {left: false, right: false};
+
+  ngOnInit() {
+    this.navControlService.state$.subscribe(state =>  this.panelState = state)
+  }
 
   ngAfterViewInit() {
     if (this.canvas) {
