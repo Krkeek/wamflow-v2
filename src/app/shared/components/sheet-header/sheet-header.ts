@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatCheckbox } from '@angular/material/checkbox';
@@ -29,13 +29,19 @@ import { NavControlService } from '../../../core/services/navControlService';
   templateUrl: './sheet-header.html',
   styleUrl: './sheet-header.css',
 })
-export class SheetHeader {
+export class SheetHeader implements OnInit{
   @ViewChild('fileInput', { static: false })
   fileInput!: ElementRef<HTMLInputElement>;
 
   private readonly jointService = inject(JointService);
   protected readonly navControlService = inject(NavControlService);
   private _snackBar = inject(MatSnackBar);
+  protected panelState = {left: false, right: false};
+
+  ngOnInit() {
+    this.navControlService.state$.subscribe(state =>  this.panelState = state)
+  }
+
 
   private _dims = this.jointService.paperDimensions(); // { width, height }
 
