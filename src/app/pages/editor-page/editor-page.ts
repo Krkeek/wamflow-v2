@@ -7,6 +7,7 @@ import { SheetHeader } from '../../shared/components/sheet-header/sheet-header';
 import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
 import { FormsModule } from '@angular/forms';
 import { NavControlService } from '../../core/services/navControlService';
+import { AccountSettings } from '../../shared/components/account-settings/account-settings';
 
 @Component({
   selector: 'app-editor-page',
@@ -18,6 +19,7 @@ import { NavControlService } from '../../core/services/navControlService';
     MatSidenavContent,
     FormsModule,
     Palette,
+    AccountSettings,
   ],
   templateUrl: './editor-page.html',
   styleUrl: './editor-page.css',
@@ -27,10 +29,10 @@ export class EditorPage implements AfterViewInit, OnInit {
   protected readonly ondragover = ondragover;
   private readonly navControlService = inject(NavControlService);
   private readonly jointService = inject(JointService);
-  protected panelState = {left: false, right: false};
+  protected panelState = { left: false, right: false };
 
   ngOnInit() {
-    this.navControlService.state$.subscribe(state =>  this.panelState = state)
+    this.navControlService.state$.subscribe((state) => (this.panelState = state));
   }
 
   ngAfterViewInit() {

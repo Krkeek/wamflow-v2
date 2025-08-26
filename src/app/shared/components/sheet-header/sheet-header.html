@@ -1,6 +1,6 @@
 <div class="container">
   <div class="left-side">
-    <button  [style.color]="panelState.left ? 'var(--ancient--color)' : ''"   (click)="this.navControlService.toggle('left')" class="settingDiv" matTooltip="Dock Side Panel">
+    <button  [style.color]="panelState.left ? 'var(--ancient--color)' : ''"   (click)="this.navControlService.toggle('left')" class="settingDiv" matTooltip="Dock Left Panel">
       <mat-icon>
         {{ panelState.left ? 'align_horizontal_left' : 'align_horizontal_right' }}
       </mat-icon>
@@ -26,7 +26,7 @@
       <button [matMenuTriggerFor]="settings" class="settingDiv" matTooltip="Settings">
         <mat-icon>settings</mat-icon>
       </button>
-      <button [style.color]="panelState.right ? 'var(--ancient--color)' : ''" (click)="this.navControlService.toggle('right')" class="settingDiv" matTooltip="Dock Side Panel">
+      <button [style.color]="panelState.right ? 'var(--ancient--color)' : ''" (click)="this.navControlService.toggle('right')" class="settingDiv" matTooltip="Dock Right Panel">
         <mat-icon>
           {{ panelState.right ? 'align_horizontal_right' : 'align_horizontal_left' }}
         </mat-icon>

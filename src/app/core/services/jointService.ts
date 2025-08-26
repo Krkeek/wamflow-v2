@@ -3,7 +3,17 @@ import { dia, elementTools, g, linkTools, shapes } from '@joint/core';
 import { WamElements } from '../enums/WamElements';
 import { ElementCreatorService } from './elementCreatorService';
 import { JOINT_CONSTRAINTS } from '../constants/JointConstraints';
-import { BehaviorSubject, distinctUntilChanged, pairwise } from 'rxjs';
+import {
+  BehaviorSubject,
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  of,
+  pairwise,
+  Subject,
+  switchMap,
+  takeUntil,
+} from 'rxjs';
 import { ResizeControl } from '../Infrastructure/ResizeControl';
 import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
@@ -14,11 +24,14 @@ import { CustomElement } from '../Infrastructure/CustomElement';
 import { HistoryService } from './historyService';
 import { BaseUtility } from '../utilities/BaseUtility';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { LocalStorageService } from './localStorageService';
+import { NavControlService } from './navControlService';
 
 @Injectable({
   providedIn: 'root',
 })
 export class JointService implements OnDestroy {
+
   public selectedCells$ = new BehaviorSubject<ID[]>([]);
   public readonly ready = signal(false);
   public readonly title = signal('');
@@ -30,9 +43,14 @@ export class JointService implements OnDestroy {
   private readonly _dialogService = inject(DialogService);
   private readonly _historyService = inject(HistoryService);
   private readonly _snackBar = inject(MatSnackBar);
+  private readonly _localStorageService = inject(LocalStorageService);
+  private readonly _navControlService = inject(NavControlService);
 
   private _graph?: dia.Graph;
   private _paper?: dia.Paper;
+
+  private _saveTrigger$ = new Subject<void>();
+  private destroy$ = new Subject<void>();
 
   private _groupDragActive = false;
   private _groupDragStart: { x: number; y: number } | null = null;
@@ -80,6 +98,18 @@ export class JointService implements OnDestroy {
           }
         }
       });
+
+    this._saveTrigger$
+      .pipe(
+        debounceTime(800),
+        switchMap(() => this.persist()),
+        catchError((err) => {
+          console.error('Save failed', err);
+          return of(null);
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe();
   }
 
   private _toolsView?: ToolsView;
@@ -109,36 +139,50 @@ export class JointService implements OnDestroy {
   }
 
   public triggerKeyboardAction(e: KeyboardEvent) {
-    if (!this._graph || this.selectedCells$.value.length === 0) return;
-    if (e.key === 'Backspace' || e.key === 'Delete') {
-      e.preventDefault();
-      this._dialogService
-        .confirm({
-          title: this.selectedCells$.value.length < 2 ? 'Delete cell' : 'Delete cells',
-          message:
-            this.selectedCells$.value.length < 2
-              ? 'Are you sure you want to delete this cell? This action cannot be undone.'
-              : 'Are you sure you want to delete these cells? This action cannot be undone.',
-          confirmText: this.selectedCells$.value.length < 2 ? 'Delete' : 'Delete All',
-          cancelText: 'Cancel',
-          confirmColor: 'danger',
-        })
-        .subscribe((ok) => {
-          if (ok) {
-            this.removeCells(this.selectedCells$.value);
-            this.removeMultiSelectionBox();
-          }
-        });
+    if (!this._graph ) return;
+
+    if(this.selectedCells$.value.length != 0){
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        this._dialogService
+          .confirm({
+            title: this.selectedCells$.value.length < 2 ? 'Delete cell' : 'Delete cells',
+            message:
+              this.selectedCells$.value.length < 2
+                ? 'Are you sure you want to delete this cell? This action cannot be undone.'
+                : 'Are you sure you want to delete these cells? This action cannot be undone.',
+            confirmText: this.selectedCells$.value.length < 2 ? 'Delete' : 'Delete All',
+            cancelText: 'Cancel',
+            confirmColor: 'danger',
+          })
+          .subscribe((ok) => {
+            if (ok) {
+              this.removeCells(this.selectedCells$.value);
+              this.removeMultiSelectionBox();
+            }
+          });
+      }
     }
 
-    if (e.ctrlKey && e.key === 'z') {
+
+    if (e.ctrlKey && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       this._historyService.undo(this._graph);
     }
-    if (e.ctrlKey && e.key === 'y') {
+    if (e.ctrlKey && e.key.toLowerCase() === 'y') {
       e.preventDefault();
       this._historyService.redo(this._graph);
     }
+    if (!e.ctrlKey && e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      this._navControlService.toggle('left');
+    }
+
+    if (e.ctrlKey && e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      this._navControlService.toggle('right');
+    }
+
   }
 
   public updatePaperDimensions(width: number, height: number) {
@@ -173,26 +217,24 @@ export class JointService implements OnDestroy {
             rx: 6,
             ry: 6,
             attrs: {
-              'stroke': JOINT_CONSTRAINTS.primaryStroke,
+              stroke: JOINT_CONSTRAINTS.primaryStroke,
               'stroke-width': 2,
-              'stroke-dasharray': '4,2'
-            }
-          }
+              'stroke-dasharray': '4,2',
+            },
+          },
         },
         connecting: {
           name: 'stroke',
           options: {
             padding: 20,
             attrs: {
-              'stroke': JOINT_CONSTRAINTS.primaryStroke,
+              stroke: JOINT_CONSTRAINTS.primaryStroke,
               'stroke-width': 1,
-              'stroke-dasharray': '2'
-            }
-          }
-        }
-      }
-
-
+              'stroke-dasharray': '2',
+            },
+          },
+        },
+      },
     });
 
     this.initToolTips();
@@ -204,7 +246,7 @@ export class JointService implements OnDestroy {
     if (!this._graph) return;
 
     if (this._graph.getCells().length === 0) {
-      this._snackBar.open('The sheet is already empty', 'Dismiss', { duration: 3000 });
+      this._snackBar.open('The diagram is already empty', 'Dismiss', { duration: 3000 });
       return;
     }
 
@@ -220,7 +262,7 @@ export class JointService implements OnDestroy {
         if (ok) {
           if (!this._graph) return;
           this._graph.clear();
-          this._snackBar.open('Sheet cleared successfully', 'Dismiss', { duration: 3000 });
+          this._snackBar.open('Diagram cleared successfully', 'Dismiss', { duration: 3000 });
         }
       });
   }
@@ -349,7 +391,7 @@ export class JointService implements OnDestroy {
 
   public exportJSON = async () => {
     if (!this._graph || this._graph.getCells().length === 0) {
-      this._snackBar.open('The sheet is empty', 'Dismiss', { duration: 3000 });
+      this._snackBar.open('The diagram is empty', 'Dismiss', { duration: 3000 });
       return;
     }
 
@@ -382,7 +424,10 @@ export class JointService implements OnDestroy {
     this._graph.off('change');
     this._graph.off('add');
     this._graph.off('remove');
-    this._graph.off('change add remove');
+    this._graph.off('change');
+
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   public removeCells = (idsToRemove: ID[]) => {
@@ -414,9 +459,27 @@ export class JointService implements OnDestroy {
     return this.selectedCells$.value ?? [];
   }
 
-  private initGraph(): dia.Graph | void {
+  private async initGraph(): Promise<dia.Graph | void> {
     this._graph = new dia.Graph({}, { cellNamespace: this.namespace });
+    await this.tryLoadingLocalStorageGraph();
   }
+
+  private tryLoadingLocalStorageGraph = async () => {
+    if (!this._graph) return;
+
+    const saved = await this._localStorageService.load();
+    if (saved?.data) {
+      try {
+        this._graph.fromJSON(saved.data);
+        if (this._graph.getCells().length != 0)
+        this._snackBar.open('Diagram restored from last session', 'Dismiss', { duration: 3000 });
+
+      } catch  {
+        this._snackBar.open('Couldn’t restore your diagram', 'Dismiss', { duration: 3000 });
+      }
+    }
+  };
+
   private getPaletteItemGraph(): dia.Graph {
     return new dia.Graph({}, { cellNamespace: shapes });
   }
@@ -429,7 +492,10 @@ export class JointService implements OnDestroy {
   private setEdgeHighlight(view: dia.ElementView, enabled: boolean): void {
     if (!view.model) return;
 
-    view.model.attr(['edge', 'stroke'], enabled ? JOINT_CONSTRAINTS.edgeHighlightColor : 'transparent');
+    view.model.attr(
+      ['edge', 'stroke'],
+      enabled ? JOINT_CONSTRAINTS.edgeHighlightColor : 'transparent',
+    );
     view.model.attr(['edge', 'cursor'], enabled ? 'crosshair' : 'move');
   }
 
@@ -455,7 +521,6 @@ export class JointService implements OnDestroy {
       },
     });
 
-
     const verticesTool = new linkTools.Vertices();
     const segmentsTool = new linkTools.Segments();
 
@@ -469,25 +534,28 @@ export class JointService implements OnDestroy {
     const settingsButton = new elementTools.Button({
       x: '99%',
       y: '1%',
-      markup: [{
-        tagName: 'circle',
-        selector: 'button',
-        attributes: {
-          'r': 7,
-          'fill': 'black',
-          'cursor': 'pointer'
-        }
-      }, {
-        tagName: 'path',
-        selector: 'icon',
-        attributes: {
-          'd': 'M -2 4 2 4 M 0 3 0 0 M -2 -1 1 -1 M -1 -4 1 -4',
-          'fill': 'none',
-          'stroke': '#FFFFFF',
-          'stroke-width': 2,
-          'pointer-events': 'none'
-        }
-      }],
+      markup: [
+        {
+          tagName: 'circle',
+          selector: 'button',
+          attributes: {
+            r: 7,
+            fill: 'black',
+            cursor: 'pointer',
+          },
+        },
+        {
+          tagName: 'path',
+          selector: 'icon',
+          attributes: {
+            d: 'M -2 4 2 4 M 0 3 0 0 M -2 -1 1 -1 M -1 -4 1 -4',
+            fill: 'none',
+            stroke: '#FFFFFF',
+            'stroke-width': 2,
+            'pointer-events': 'none',
+          },
+        },
+      ],
       action: (evt: dia.Event, view: dia.ElementView) => {
         this._dialogService.openDialog(ElementSettingsDialog, {
           data: { view: view, evt: evt },
@@ -533,6 +601,7 @@ export class JointService implements OnDestroy {
     this._paper.on('blank:pointermove', this.onBlankPointerMove);
     this._graph.on('remove', this.onGraphRemove);
     this._graph.on('add', this.onGraphAdd);
+    this._graph.on('change', this.onGraphChange);
   }
 
   private setSelection(ids: ID[]) {
@@ -565,6 +634,13 @@ export class JointService implements OnDestroy {
     this._multiBoxRect = undefined;
   }
 
+  private persist() {
+    if (!this._graph) return of(null);
+    const data = this._graph.toJSON();
+    const payload = { version: 1, ts: Date.now(), data };
+    return this._localStorageService.save(payload);
+  }
+
   private onElementPointerDown = (
     elementView: dia.ElementView,
     _evt: dia.Event,
@@ -574,9 +650,7 @@ export class JointService implements OnDestroy {
     this.initDraggingCells(elementView, x, y);
   };
 
-
-  private onLinkPointerDown = (elementView: dia.LinkView,) => {
-
+  private onLinkPointerDown = (elementView: dia.LinkView) => {
     const ids = this.getSelectedIds();
     const thisId = String(elementView.model.id);
 
@@ -605,16 +679,15 @@ export class JointService implements OnDestroy {
 
   private onElementMouseEnter = (elementView: dia.ElementView) => {
     this.setEdgeHighlight(elementView, true);
-
-  }
+  };
 
   private onElementMouseLeave = (elementView: dia.ElementView) => {
     this.setEdgeHighlight(elementView, false);
-  }
+  };
 
   private onLinkContextMenu = (linkView: dia.LinkView) => {
     this.showToolView(linkView);
-  }
+  };
 
   private onBlankPointerClick = () => {
     this.clearAllSelection();
@@ -636,11 +709,18 @@ export class JointService implements OnDestroy {
 
   private onGraphRemove = (cell: dia.Cell) => {
     this.removeFromSelection(cell.id);
+    this._saveTrigger$.next();
   };
 
   private onGraphAdd = () => {
     if (!this._graph) return;
     this.removeMultiSelectionBox();
+    this._saveTrigger$.next();
+  };
+
+  private onGraphChange = () => {
+    if (!this._graph) return;
+    this._saveTrigger$.next();
   };
 
   private createRubberNode = (x: number, y: number) => {
