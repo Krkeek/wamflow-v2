@@ -1,7 +1,14 @@
+import { dia } from '@joint/core';
+import GridOptions = dia.Paper.GridOptions;
+
 export const JOINT_CONSTRAINTS = {
   defaultFill: 'white',
   defaultPaletteFill: 'transparent',
   defaultStroke: '#000',
+  defaultGrid:  {
+    name: "mesh",
+    args: { color: '#bdbdbd', thickness: 1 },
+  } as GridOptions,
   warningFill: '#FFF3CD',
   infoFill: '#D1ECF1',
   primaryStroke: '#1E88E5',

@@ -28,6 +28,7 @@ import { WamLinks } from '../enums/WamLinks';
 import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
 import CellView = dia.CellView;
+import html2canvas from 'html2canvas';
 
 @Injectable({
   providedIn: 'root',
@@ -49,7 +50,16 @@ export class JointService implements OnDestroy {
   private readonly _cellCreatorService = inject(CellCreatorService);
 
   private _graph?: dia.Graph;
+  private get graph(){
+    if(!this._graph) throw 'No graph defined';
+    return this._graph;
+  }
+
   private _paper?: dia.Paper;
+  private get paper(){
+    if(!this._paper) throw 'No paper defined';
+    return this._paper;
+  }
 
   private _saveTrigger$ = new Subject<void>();
   private destroy$ = new Subject<void>();
@@ -62,6 +72,10 @@ export class JointService implements OnDestroy {
   private _origin?: dia.Point;
   private _rubberNode?: SVGRectElement;
   private _multiBoxG?: SVGGElement;
+  private get multiBoxG() {
+    if (!this._multiBoxG) throw 'No multiBoxG defined';
+    return this._multiBoxG;
+  }
   private _multiBoxRect?: SVGRectElement;
   private _multiBoxDeleteButton?: SVGElement;
   private _multiBoxResizeButton?: SVGElement;
@@ -77,6 +91,12 @@ export class JointService implements OnDestroy {
     },
   };
 
+  private _canvas?:HTMLElement
+  private get canvas() {
+    if (!this._canvas) throw 'Canvas is undefined';
+    return this._canvas;
+  }
+
   constructor() {
     this.selectedCells$
       .pipe(
@@ -90,16 +110,16 @@ export class JointService implements OnDestroy {
 
         for (const id of prevIds) {
           if (!currSet.has(id)) {
-            const cell = this._graph?.getCell(id);
+            const cell = this.graph?.getCell(id);
             if (cell) {
-              this.unhighlightCell(id);
+              this.unhighlightCells([id]);
             }
           }
         }
 
         for (const id of currIds) {
           if (!prevSet.has(id)) {
-            this.highlightCell(id);
+            this.highlightCells([id]);
           }
         }
       });
@@ -146,7 +166,6 @@ export class JointService implements OnDestroy {
   }
 
   public triggerKeyboardAction(e: KeyboardEvent) {
-    if (!this._graph) return;
 
     if (this.selectedCells$.value.length != 0) {
       if (e.key === 'Backspace' || e.key === 'Delete') {
@@ -173,11 +192,11 @@ export class JointService implements OnDestroy {
 
     if (e.ctrlKey && e.key.toLowerCase() === 'z') {
       e.preventDefault();
-      this._historyService.undo(this._graph);
+      this._historyService.undo(this.graph);
     }
     if (e.ctrlKey && e.key.toLowerCase() === 'y') {
       e.preventDefault();
-      this._historyService.redo(this._graph);
+      this._historyService.redo(this.graph);
     }
     if (!e.ctrlKey && e.key.toLowerCase() === 'b') {
       e.preventDefault();
@@ -196,18 +215,17 @@ export class JointService implements OnDestroy {
 
 
   public async initPaper(canvas: HTMLElement): Promise<void> {
+    this._canvas = canvas;
+
     await this.initGraph();
     this._paper = new dia.Paper({
       el: canvas,
-      model: this._graph,
+      model: this.graph,
       width: this.paperDimensions().width,
       height: this.paperDimensions().height,
       gridSize: 10,
       drawGridSize: 30,
-      drawGrid: {
-        name: 'mesh',
-        args: { color: '#bdbdbd', thickness: 1 },
-      },
+      drawGrid: JOINT_CONSTRAINTS.defaultGrid,
       defaultLink: () => this._cellCreatorService.createLink(this._activeLinkType$.value),
       cellViewNamespace: this.namespace,
       linkPinning: false,
@@ -250,9 +268,9 @@ export class JointService implements OnDestroy {
   }
 
   public resetPaper(): void {
-    if (!this._graph) return;
+    if (!this.graph) return;
 
-    if (this._graph.getCells().length === 0) {
+    if (this.graph.getCells().length === 0) {
       this._snackBar.open('The diagram is already empty', 'Dismiss', { duration: 3000 });
       return;
     }
@@ -267,8 +285,7 @@ export class JointService implements OnDestroy {
       })
       .subscribe((ok) => {
         if (ok) {
-          if (!this._graph) return;
-          this._graph.clear();
+          this.graph.clear();
           this._snackBar.open('Diagram cleared successfully', 'Dismiss', { duration: 3000 });
         }
       });
@@ -303,8 +320,8 @@ export class JointService implements OnDestroy {
         padding: 5,
       });
     } else {
-      if (this._graph) {
-        newCell.addTo(this._graph);
+      if (this.graph) {
+        newCell.addTo(this.graph);
       }
     }
   }
@@ -315,65 +332,69 @@ export class JointService implements OnDestroy {
     y: number,
     dimensions?: { width: number; height: number },
   ) {
-    if (!this._graph || !this._paper) return;
-    this._historyService.snapshot(this._graph);
+    this._historyService.snapshot(this.graph);
     const el = this._elementCreatorService.createElement(cell);
 
     const { width, height } = el.size();
 
     if (dimensions) el.resize(dimensions.width, dimensions.height);
     el.position(x - width / 2, y - height / 2);
-    el.addTo(this._graph);
+    el.addTo(this.graph);
     this.selectSingle(el.id);
-    const cellView = el.findView(this._paper);
+    const cellView = el.findView(this.paper);
     this.showToolView(cellView);
   }
 
-  public highlightCell(cellId: ID): void {
-    const cell = this.getCellById(cellId);
+  public highlightCells(cellIds: ID[]): void {
+    cellIds.forEach((cellId) => {
+      const cell = this.getCellById(cellId);
 
-    if (!cell) return;
+      if (!cell) return;
 
-    if (cell.isElement()) {
-      cell.attr('body/stroke', JOINT_CONSTRAINTS.primaryStroke);
-      cell.attr('path/stroke', JOINT_CONSTRAINTS.primaryStroke);
-      cell.attr('top/stroke', JOINT_CONSTRAINTS.primaryStroke);
-    }
+      if (cell.isElement()) {
+        cell.attr('body/stroke', JOINT_CONSTRAINTS.primaryStroke);
+        cell.attr('path/stroke', JOINT_CONSTRAINTS.primaryStroke);
+        cell.attr('top/stroke', JOINT_CONSTRAINTS.primaryStroke);
+      }
 
-    if (cell.isLink()) {
-      cell.attr('line/stroke', JOINT_CONSTRAINTS.primaryStroke);
-    }
+      if (cell.isLink()) {
+        cell.attr('line/stroke', JOINT_CONSTRAINTS.primaryStroke);
+      }
+
+    })
   }
 
-  public unhighlightCell(cellId: ID): void {
-    const cellView = this.getCellView(cellId);
-    if (cellView) {
-      cellView.removeTools();
-    }
+  public unhighlightCells(cellIds: ID[]): void {
+    cellIds.forEach((cellId) => {
+      const cellView = this.getCellView(cellId);
+      if (cellView) {
+        cellView.removeTools();
+      }
 
-    const cell = this.getCellById(cellId);
-    if (!cell) return;
+      const cell = this.getCellById(cellId);
+      if (!cell) return;
 
-    if (cell.isElement()) {
-      cell.attr('body/stroke', JOINT_CONSTRAINTS.defaultStroke);
-      cell.attr('path/stroke', JOINT_CONSTRAINTS.defaultStroke);
-      cell.attr('top/stroke', JOINT_CONSTRAINTS.defaultStroke);
-    }
+      if (cell.isElement()) {
+        cell.attr('body/stroke', JOINT_CONSTRAINTS.defaultStroke);
+        cell.attr('path/stroke', JOINT_CONSTRAINTS.defaultStroke);
+        cell.attr('top/stroke', JOINT_CONSTRAINTS.defaultStroke);
+      }
 
-    if (cell.isLink()) {
-      cell.attr('line/stroke', JOINT_CONSTRAINTS.defaultStroke);
-    }
+      if (cell.isLink()) {
+        cell.attr('line/stroke', JOINT_CONSTRAINTS.defaultStroke);
+      }
+    })
   }
+
   public getCellById(cellId: ID) {
-    const cell = this._graph?.getCell(cellId);
+    const cell = this.graph?.getCell(cellId);
     if (!cell) throw Error(`Unable to get cell ${cellId}`);
     return cell;
   }
 
   public duplicateCell(cellId: ID): void {
-    if (!this._graph || !this._paper) return;
 
-    const cell = this._graph.getCell(cellId);
+    const cell = this.graph.getCell(cellId);
     if (!cell || !cell.isElement()) return;
 
     const newCell = cell.clone();
@@ -384,25 +405,24 @@ export class JointService implements OnDestroy {
     const offset = 20;
     (newCell as dia.Element).position(x + width + offset, y);
 
-    newCell.addTo(this._graph);
+    newCell.addTo(this.graph);
     this.selectSingle(newCell.id);
   }
 
   public importJSON = async (file: File) => {
-    if (!this._graph) return;
     const JSONObject = await BaseUtility.parseJsonFile(file);
-    this._graph.fromJSON(JSONObject);
+    this.graph.fromJSON(JSONObject);
     this.parseTitleFromGraph();
     this._snackBar.open('Diagram imported successfully', 'Dismiss', { duration: 2500 });
   };
 
   public exportJSON = async () => {
-    if (!this._graph || this._graph.getCells().length === 0) {
+    if (this.graph.getCells().length === 0) {
       this._snackBar.open('The diagram is empty', 'Dismiss', { duration: 3000 });
       return;
     }
     this.parseTitleToGraph();
-    const jsonObject = this._graph.toJSON();
+    const jsonObject = this.graph.toJSON();
     await BaseUtility.exportJSONHelper(jsonObject, this.title());
 
     this._snackBar.open('Diagram exported as JSON', 'Dismiss', { duration: 2500 });
@@ -411,19 +431,48 @@ export class JointService implements OnDestroy {
 
 
   public exportPNG = async () => {
-    if (!this._graph || this._graph.getCells().length === 0) {
+    if (this.graph.getCells().length === 0) {
       this._snackBar.open('The diagram is empty', 'Dismiss', { duration: 3000 });
       return;
     }
-
-
-    this._snackBar.open('Diagram exported as JSON', 'Dismiss', { duration: 2500 });
+    this.exportPNGPrepare('before')
+    html2canvas(this.canvas)
+        .then((canvas) =>{
+          const based64image = canvas.toDataURL('image/png');
+          const anchor = document.createElement('a');
+          anchor.setAttribute('href', based64image)
+          anchor.setAttribute('download', this.title())
+          anchor.click()
+          anchor.remove()
+        })
+    this.exportPNGPrepare('after')
+    this._snackBar.open('Diagram exported as PNG', 'Dismiss', { duration: 2500 });
   };
 
+  private exportPNGPrepare = (stage: 'before' | 'after') =>{
+    if (stage === 'before') {
+
+      this.multiBoxG.style.display = 'none';
+      this.unhighlightCells(this.selectedCells$.value)
+      this.paper.setGrid( {name: "mesh", args: {color: 'transparent'}})
+      this.paper.fitToContent({
+        allowNewOrigin: 'any',
+        allowNegativeBottomRight: false,
+        padding: 5,
+      })
+    }
+    else {
+      this.multiBoxG.style.display = '';
+      this.highlightCells(this.selectedCells$.value)
+      this.paper.setDimensions(JOINT_CONSTRAINTS.paperDefaultDimensions.width,JOINT_CONSTRAINTS.paperDefaultDimensions.height);
+      this.paper.translate(0,0);
+      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGrid)
+    }
+  }
 
 
   public ngOnDestroy(): void {
-    if (!this._paper || !this._graph) throw new Error('No _paper or _graph found.');
+    if (!this._paper || !this.graph) throw new Error('No _paper or _graph found.');
 
     this._paper.off('element:pointerdown');
     this._paper.off('element:mouseover');
@@ -441,37 +490,35 @@ export class JointService implements OnDestroy {
     this._paper.off('blank:pointerup');
     this._paper.off('blank:pointermove');
     this._paper.off('blank:mouseover');
-    this._graph.off('change');
-    this._graph.off('add');
-    this._graph.off('remove');
-    this._graph.off('change');
+    this.graph.off('change');
+    this.graph.off('add');
+    this.graph.off('remove');
+    this.graph.off('change');
 
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   public removeCells = (idsToRemove: ID[]) => {
-    if (!this._graph) return;
-    this._historyService.snapshot(this._graph);
-    const cellsToRemove = this._graph.getCells().filter((cell) => idsToRemove.includes(cell.id));
-    this._graph.removeCells(cellsToRemove);
+    this._historyService.snapshot(this.graph);
+    const cellsToRemove = this.graph.getCells().filter((cell) => idsToRemove.includes(cell.id));
+    this.graph.removeCells(cellsToRemove);
   };
 
   public removeCellById = (idToRemove: ID) => {
-    if (!this._graph) return;
-    this._historyService.snapshot(this._graph);
-    const cellsToRemove = this._graph.getCell(idToRemove);
-    this._graph.removeCells([cellsToRemove]);
+    this._historyService.snapshot(this.graph);
+    const cellsToRemove = this.graph.getCell(idToRemove);
+    this.graph.removeCells([cellsToRemove]);
   };
   public checkForCustomDimensions(element: WamElements) {
     return element === WamElements.SecurityRealm ? { width: 500, height: 300 } : undefined;
   }
   private parseTitleToGraph() {
-    this._graph?.set('title', this.title());
+    this.graph?.set('title', this.title());
   }
 
   private parseTitleFromGraph() {
-    const title = this._graph?.get('title');
+    const title = this.graph?.get('title');
     this.title.set(title);
   }
 
@@ -485,13 +532,12 @@ export class JointService implements OnDestroy {
   }
 
   private tryLoadingLocalStorageGraph = async () => {
-    if (!this._graph) return;
 
     const saved = await this._localStorageService.load();
     if (saved?.data) {
       try {
-        this._graph.fromJSON(saved.data);
-        if (this._graph.getCells().length != 0){
+        this.graph.fromJSON(saved.data);
+        if (this.graph.getCells().length != 0){
             this._snackBar
               .open('Restored from last session', 'New Diagram', { duration: 5000 })
               .onAction().subscribe(() => {
@@ -608,7 +654,7 @@ export class JointService implements OnDestroy {
   };
 
   private bindPaperEvents(): void {
-    if (!this._paper || !this._graph) throw new Error('No _paper or _graph found.');
+    if (!this._paper || !this.graph) throw new Error('No _paper or _graph found.');
 
     // attach
     this._paper.on('element:pointerdown', this.onElementPointerDown);
@@ -623,9 +669,9 @@ export class JointService implements OnDestroy {
     this._paper.on('blank:pointerdown', this.onBlankPointerDown);
     this._paper.on('blank:pointerup', this.onBlankPointerUp);
     this._paper.on('blank:pointermove', this.onBlankPointerMove);
-    this._graph.on('remove', this.onGraphRemove);
-    this._graph.on('add', this.onGraphAdd);
-    this._graph.on('change', this.onGraphChange);
+    this.graph.on('remove', this.onGraphRemove);
+    this.graph.on('add', this.onGraphAdd);
+    this.graph.on('change', this.onGraphChange);
   }
 
   private setSelection(ids: ID[]) {
@@ -659,8 +705,7 @@ export class JointService implements OnDestroy {
   }
 
   private persist() {
-    if (!this._graph) return of(null);
-    const data = this._graph.toJSON();
+    const data = this.graph.toJSON();
     const payload = { version: 1, ts: Date.now(), data };
     return this._localStorageService.save(payload);
   }
@@ -737,13 +782,11 @@ export class JointService implements OnDestroy {
   };
 
   private onGraphAdd = () => {
-    if (!this._graph) return;
     this.removeMultiSelectionBox();
     this._saveTrigger$.next();
   };
 
   private onGraphChange = () => {
-    if (!this._graph) return;
     this._saveTrigger$.next();
   };
 
@@ -805,7 +848,7 @@ export class JointService implements OnDestroy {
       return;
     }
     const views = selectedIds
-      .map((id) => this._graph?.getCell(id))
+      .map((id) => this.graph?.getCell(id))
       .filter((c): c is dia.Element => !!c && c.isElement())
       .map((el) => el.findView(this._paper!))
       .filter((v): v is dia.ElementView => !!v);
@@ -996,13 +1039,13 @@ export class JointService implements OnDestroy {
     const dx = (x ?? 0) - this._groupDragStart.x;
     const dy = (y ?? 0) - this._groupDragStart.y;
 
-    this._graph?.startBatch('group-move');
+    this.graph?.startBatch('group-move');
 
     const grabbedId = String(view.model.id);
     for (const id of this.getSelectedIds()) {
       if (id === grabbedId) continue;
       const base = this._groupBasePos.get(id);
-      const cell = this._graph?.getCell(id);
+      const cell = this.graph?.getCell(id);
       if (base && cell && cell.isElement()) {
         (cell as dia.Element).position(base.x + dx, base.y + dy);
       }
@@ -1014,7 +1057,7 @@ export class JointService implements OnDestroy {
       this._multiBoxG.setAttribute('transform', `translate(${dx}, ${dy})`);
     }
 
-    this._graph?.stopBatch('group-move');
+    this.graph?.stopBatch('group-move');
   }
   private initDraggingCells(elementView: dia.ElementView, x?: number, y?: number) {
     const ids = this.getSelectedIds();
@@ -1037,7 +1080,7 @@ export class JointService implements OnDestroy {
     this._groupBasePos.clear();
 
     for (const id of this.getSelectedIds()) {
-      const cell = this._graph?.getCell(id);
+      const cell = this.graph?.getCell(id);
       if (cell && cell.isElement()) {
         const { x: px, y: py } = (cell as dia.Element).position();
         this._groupBasePos.set(id, { x: px, y: py });
@@ -1055,14 +1098,14 @@ export class JointService implements OnDestroy {
   }
 
   private beginGroupResize() {
-    if (!this._paper || !this._graph) return;
+    if (!this._paper || !this.graph) return;
 
     const ids = this.getSelectedIds();
     if (ids.length < 2) return; // only for multi-select (or allow 1 if you like)
 
     // Compute current union bbox and anchor (top-left)
     const views = ids
-      .map((id) => this._graph!.getCell(id))
+      .map((id) => this.graph!.getCell(id))
       .filter((c): c is dia.Element => !!c && c.isElement())
       .map((el) => el.findView(this._paper!))
       .filter((v): v is dia.ElementView => !!v);
@@ -1079,7 +1122,7 @@ export class JointService implements OnDestroy {
     // Store base pos & size of each element
     this._groupResizeBase.clear();
     for (const id of ids) {
-      const cell = this._graph.getCell(id) as dia.Element | null;
+      const cell = this.graph.getCell(id) as dia.Element | null;
       if (!cell?.isElement()) continue;
       const p = cell.position();
       const s = cell.size();
@@ -1126,7 +1169,7 @@ export class JointService implements OnDestroy {
       !this._groupResizeActive ||
       !this._groupResizeAnchor ||
       !this._groupResizeStart ||
-      !this._graph
+      !this.graph
     )
       return;
 
@@ -1141,10 +1184,10 @@ export class JointService implements OnDestroy {
     const sMin = 0.05; // guard against collapsing
     const s = Math.max(Math.max(sx, sy), sMin); // <-- key line: same factor for X & Y
 
-    this._graph.startBatch('group-resize');
+    this.graph.startBatch('group-resize');
 
     for (const [id, base] of this._groupResizeBase.entries()) {
-      const cell = this._graph.getCell(id) as dia.Element | null;
+      const cell = this.graph.getCell(id) as dia.Element | null;
       if (!cell?.isElement()) continue;
 
       // offset from the anchor in initial geometry
@@ -1165,7 +1208,7 @@ export class JointService implements OnDestroy {
       cell.resize(nw, nh);
     }
 
-    this._graph.stopBatch('group-resize');
+    this.graph.stopBatch('group-resize');
 
     // Recompute overlay each move so the handle sticks to bottom-right
     this.updateMultiSelectionBox(this.getSelectedIds());
