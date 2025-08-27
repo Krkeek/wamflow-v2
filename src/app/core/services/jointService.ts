@@ -72,10 +72,6 @@ export class JointService implements OnDestroy {
   private _origin?: dia.Point;
   private _rubberNode?: SVGRectElement;
   private _multiBoxG?: SVGGElement;
-  private get multiBoxG() {
-    if (!this._multiBoxG) throw 'No multiBoxG defined';
-    return this._multiBoxG;
-  }
   private _multiBoxRect?: SVGRectElement;
   private _multiBoxDeleteButton?: SVGElement;
   private _multiBoxResizeButton?: SVGElement;
@@ -452,7 +448,8 @@ export class JointService implements OnDestroy {
   private exportPNGPrepare = (stage: 'before' | 'after') =>{
     if (stage === 'before') {
 
-      this.multiBoxG.style.display = 'none';
+
+      if (this._multiBoxG) this._multiBoxG.style.display = 'none';
       this.unhighlightCells(this.selectedCells$.value)
       this.paper.setGrid( {name: "mesh", args: {color: 'transparent'}})
       this.paper.fitToContent({
@@ -462,7 +459,7 @@ export class JointService implements OnDestroy {
       })
     }
     else {
-      this.multiBoxG.style.display = '';
+      if (this._multiBoxG) this._multiBoxG.style.display = '';
       this.highlightCells(this.selectedCells$.value)
       this.paper.setDimensions(JOINT_CONSTRAINTS.paperDefaultDimensions.width,JOINT_CONSTRAINTS.paperDefaultDimensions.height);
       this.paper.translate(0,0);
