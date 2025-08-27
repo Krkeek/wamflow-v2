@@ -401,13 +401,26 @@ export class JointService implements OnDestroy {
       this._snackBar.open('The diagram is empty', 'Dismiss', { duration: 3000 });
       return;
     }
-
     this.parseTitleToGraph();
     const jsonObject = this._graph.toJSON();
     await BaseUtility.exportJSONHelper(jsonObject, this.title());
 
     this._snackBar.open('Diagram exported as JSON', 'Dismiss', { duration: 2500 });
   };
+
+
+
+  public exportPNG = async () => {
+    if (!this._graph || this._graph.getCells().length === 0) {
+      this._snackBar.open('The diagram is empty', 'Dismiss', { duration: 3000 });
+      return;
+    }
+
+
+    this._snackBar.open('Diagram exported as JSON', 'Dismiss', { duration: 2500 });
+  };
+
+
 
   public ngOnDestroy(): void {
     if (!this._paper || !this._graph) throw new Error('No _paper or _graph found.');

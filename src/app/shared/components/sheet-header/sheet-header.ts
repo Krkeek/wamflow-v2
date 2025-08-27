@@ -117,6 +117,10 @@ export class SheetHeader implements OnInit {
     await this.jointService.exportJSON();
   }
 
+  protected async exportPNG() {
+    await this.jointService.exportPNG();
+  }
+
   protected resetPaper = () => {
     this.jointService.resetPaper();
   };
