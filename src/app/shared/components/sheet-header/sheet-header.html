@@ -19,6 +19,20 @@
 
   <div class="right-side">
 
+
+    <p>
+      <mat-button-toggle-group
+        matTooltip="Link Type"
+        name="defaultLink"
+        [value]="activeLinkType"
+        (change)="onLinkTypeChange($event.value)">
+        @for (link of linkOptions; track $index){
+          <mat-button-toggle  [value]="link.value">{{ link.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </p>
+
+
       <button [matMenuTriggerFor]="tune" class="settingDiv" matTooltip="Preferences">
         <mat-icon>tune</mat-icon>
       </button>

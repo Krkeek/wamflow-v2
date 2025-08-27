@@ -10,6 +10,8 @@ import { MatInput } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { NavControlService } from '../../../core/services/navControlService';
+import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-toggle';
+import { WamLinks } from '../../../core/enums/WamLinks';
 
 @Component({
   selector: 'app-sheet-header',
@@ -25,23 +27,38 @@ import { NavControlService } from '../../../core/services/navControlService';
     MatButton,
     MatInput,
     MatTooltip,
+    MatButtonToggleGroup,
+    MatButtonToggle,
   ],
   templateUrl: './sheet-header.html',
   styleUrl: './sheet-header.css',
 })
-export class SheetHeader implements OnInit{
+export class SheetHeader implements OnInit {
   @ViewChild('fileInput', { static: false })
   fileInput!: ElementRef<HTMLInputElement>;
 
   private readonly jointService = inject(JointService);
   protected readonly navControlService = inject(NavControlService);
   private _snackBar = inject(MatSnackBar);
-  protected panelState = {left: false, right: false};
+  protected panelState = { left: false, right: false };
+  protected setActiveLinkType = (link: WamLinks) => this.jointService._activeLinkType$.next(link);
+  protected activeLinkType = this.jointService._activeLinkType$.value;
 
-  ngOnInit() {
-    this.navControlService.state$.subscribe(state =>  this.panelState = state)
+  protected linkOptions = [
+    { label: 'Invocation', value: WamLinks.Invocation },
+    { label: 'Legacy',     value: WamLinks.LegacyRelationship },
+    { label: 'Trust',      value: WamLinks.TrustRelationship },
+  ];
+
+
+  onLinkTypeChange(val: WamLinks) {
+    this.setActiveLinkType(val);
+    this.activeLinkType = val;
   }
 
+  ngOnInit() {
+    this.navControlService.state$.subscribe((state) => (this.panelState = state));
+  }
 
   private _dims = this.jointService.paperDimensions(); // { width, height }
 

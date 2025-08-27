@@ -8,6 +8,7 @@ import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/mat
 import { FormsModule } from '@angular/forms';
 import { NavControlService } from '../../core/services/navControlService';
 import { AccountSettings } from '../../shared/components/account-settings/account-settings';
+import { MatFabButton } from '@angular/material/button';
 
 @Component({
   selector: 'app-editor-page',
@@ -20,6 +21,7 @@ import { AccountSettings } from '../../shared/components/account-settings/accoun
     FormsModule,
     Palette,
     AccountSettings,
+    MatFabButton,
   ],
   templateUrl: './editor-page.html',
   styleUrl: './editor-page.css',

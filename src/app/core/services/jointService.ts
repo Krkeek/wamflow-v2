@@ -1,7 +1,7 @@
 import { inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { dia, elementTools, g, linkTools, shapes } from '@joint/core';
 import { WamElements } from '../enums/WamElements';
-import { ElementCreatorService } from './elementCreatorService';
+import { CellCreatorService } from './cellCreatorService';
 import { JOINT_CONSTRAINTS } from '../constants/JointConstraints';
 import {
   BehaviorSubject,
@@ -12,12 +12,9 @@ import {
   pairwise,
   Subject,
   switchMap,
-  takeUntil,
+  takeUntil
 } from 'rxjs';
 import { ResizeControl } from '../Infrastructure/ResizeControl';
-import ToolsView = dia.ToolsView;
-import ID = dia.Cell.ID;
-import CellView = dia.CellView;
 import { DialogService } from './dialogService';
 import { ElementSettingsDialog } from '../../shared/components/element-settings-dialog/element-settings-dialog';
 import { CustomElement } from '../Infrastructure/CustomElement';
@@ -26,12 +23,16 @@ import { BaseUtility } from '../utilities/BaseUtility';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { LocalStorageService } from './localStorageService';
 import { NavControlService } from './navControlService';
+import { CustomLink } from '../Infrastructure/CustomLink';
+import { WamLinks } from '../enums/WamLinks';
+import ToolsView = dia.ToolsView;
+import ID = dia.Cell.ID;
+import CellView = dia.CellView;
 
 @Injectable({
   providedIn: 'root',
 })
 export class JointService implements OnDestroy {
-
   public selectedCells$ = new BehaviorSubject<ID[]>([]);
   public readonly ready = signal(false);
   public readonly title = signal('');
@@ -39,18 +40,21 @@ export class JointService implements OnDestroy {
     width: 4000,
     height: 4000,
   });
-  private readonly _elementCreatorService = inject(ElementCreatorService);
+  private readonly _elementCreatorService = inject(CellCreatorService);
   private readonly _dialogService = inject(DialogService);
   private readonly _historyService = inject(HistoryService);
   private readonly _snackBar = inject(MatSnackBar);
   private readonly _localStorageService = inject(LocalStorageService);
   private readonly _navControlService = inject(NavControlService);
+  private readonly _cellCreatorService = inject(CellCreatorService);
 
   private _graph?: dia.Graph;
   private _paper?: dia.Paper;
 
   private _saveTrigger$ = new Subject<void>();
   private destroy$ = new Subject<void>();
+
+  public _activeLinkType$ = new BehaviorSubject(WamLinks.Invocation);
 
   private _groupDragActive = false;
   private _groupDragStart: { x: number; y: number } | null = null;
@@ -69,6 +73,7 @@ export class JointService implements OnDestroy {
     ...shapes,
     custom: {
       Element: CustomElement,
+      Link: CustomLink,
     },
   };
 
@@ -129,6 +134,8 @@ export class JointService implements OnDestroy {
     return this._toolsViewLinks;
   }
 
+
+
   public clientToLocal(clientX: number, clientY: number) {
     if (!this._paper) throw new Error('No paper on clientToLocal');
     return this._paper?.clientToLocalPoint({ x: clientX, y: clientY });
@@ -139,9 +146,9 @@ export class JointService implements OnDestroy {
   }
 
   public triggerKeyboardAction(e: KeyboardEvent) {
-    if (!this._graph ) return;
+    if (!this._graph) return;
 
-    if(this.selectedCells$.value.length != 0){
+    if (this.selectedCells$.value.length != 0) {
       if (e.key === 'Backspace' || e.key === 'Delete') {
         e.preventDefault();
         this._dialogService
@@ -164,7 +171,6 @@ export class JointService implements OnDestroy {
       }
     }
 
-
     if (e.ctrlKey && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       this._historyService.undo(this._graph);
@@ -182,15 +188,15 @@ export class JointService implements OnDestroy {
       e.preventDefault();
       this._navControlService.toggle('right');
     }
-
   }
 
   public updatePaperDimensions(width: number, height: number) {
     this._paper?.setDimensions(width, height);
   }
 
-  public initPaper(canvas: HTMLElement): void {
-    this.initGraph();
+
+  public async initPaper(canvas: HTMLElement): Promise<void> {
+    await this.initGraph();
     this._paper = new dia.Paper({
       el: canvas,
       model: this._graph,
@@ -202,6 +208,7 @@ export class JointService implements OnDestroy {
         name: 'mesh',
         args: { color: '#bdbdbd', thickness: 1 },
       },
+      defaultLink: () => this._cellCreatorService.createLink(this._activeLinkType$.value),
       cellViewNamespace: this.namespace,
       linkPinning: false,
       defaultConnectionPoint: { name: 'boundary' },
@@ -281,7 +288,7 @@ export class JointService implements OnDestroy {
   }
 
   public addCell(cell: WamElements, specificGraph?: dia.Graph, specificPaper?: dia.Paper): void {
-    const newCell = this._elementCreatorService.create(cell);
+    const newCell = this._elementCreatorService.createElement(cell);
 
     if (specificGraph) {
       newCell.attr({
@@ -310,7 +317,7 @@ export class JointService implements OnDestroy {
   ) {
     if (!this._graph || !this._paper) return;
     this._historyService.snapshot(this._graph);
-    const el = this._elementCreatorService.create(cell);
+    const el = this._elementCreatorService.createElement(cell);
 
     const { width, height } = el.size();
 
@@ -472,9 +479,8 @@ export class JointService implements OnDestroy {
       try {
         this._graph.fromJSON(saved.data);
         if (this._graph.getCells().length != 0)
-        this._snackBar.open('Diagram restored from last session', 'Dismiss', { duration: 3000 });
-
-      } catch  {
+          this._snackBar.open('Diagram restored from last session', 'Dismiss', { duration: 3000 });
+      } catch {
         this._snackBar.open('Couldn’t restore your diagram', 'Dismiss', { duration: 3000 });
       }
     }

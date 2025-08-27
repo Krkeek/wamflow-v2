@@ -80,3 +80,7 @@
   align-items: center;
 }
 
+
+mat-button-toggle-group {
+  margin: 1rem ;
+}
