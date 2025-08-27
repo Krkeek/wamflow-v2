@@ -7,8 +7,7 @@ import { SheetHeader } from '../../shared/components/sheet-header/sheet-header';
 import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
 import { FormsModule } from '@angular/forms';
 import { NavControlService } from '../../core/services/navControlService';
-import { AccountSettings } from '../../shared/components/account-settings/account-settings';
-import { MatFabButton } from '@angular/material/button';
+import { Footer } from '../../shared/components/footer/footer';
 
 @Component({
   selector: 'app-editor-page',
@@ -20,15 +19,13 @@ import { MatFabButton } from '@angular/material/button';
     MatSidenavContent,
     FormsModule,
     Palette,
-    AccountSettings,
-    MatFabButton,
+    Footer,
   ],
   templateUrl: './editor-page.html',
   styleUrl: './editor-page.css',
 })
 export class EditorPage implements AfterViewInit, OnInit {
   @ViewChild('canvas') canvas?: ElementRef<HTMLElement>;
-  protected readonly ondragover = ondragover;
   private readonly navControlService = inject(NavControlService);
   private readonly jointService = inject(JointService);
   protected panelState = { left: false, right: false };
@@ -37,9 +34,9 @@ export class EditorPage implements AfterViewInit, OnInit {
     this.navControlService.state$.subscribe((state) => (this.panelState = state));
   }
 
-  ngAfterViewInit() {
+  async ngAfterViewInit() {
     if (this.canvas) {
-      this.jointService.initPaper(this.canvas.nativeElement);
+      await this.jointService.initPaper(this.canvas.nativeElement);
     } else {
       throw new Error('Canvas not initialized');
     }

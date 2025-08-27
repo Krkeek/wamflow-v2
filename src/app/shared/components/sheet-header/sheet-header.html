@@ -14,24 +14,19 @@
     />
   </div>
   <div>
-
   </div>
 
   <div class="right-side">
 
-
-    <p>
       <mat-button-toggle-group
+        appearance="legacy"
         matTooltip="Link Type"
-        name="defaultLink"
         [value]="activeLinkType"
         (change)="onLinkTypeChange($event.value)">
         @for (link of linkOptions; track $index){
           <mat-button-toggle  [value]="link.value">{{ link.label }}</mat-button-toggle>
         }
       </mat-button-toggle-group>
-    </p>
-
 
       <button [matMenuTriggerFor]="tune" class="settingDiv" matTooltip="Preferences">
         <mat-icon>tune</mat-icon>
@@ -60,7 +55,6 @@
     <mat-icon>visibility</mat-icon>
     Visibility</button>
 </mat-menu>
-
 <mat-menu #settings="matMenu">
   <button mat-menu-item>
     <mat-icon>save</mat-icon>
@@ -73,13 +67,11 @@
   <button [matMenuTriggerFor]="exportMenu" mat-menu-item>Export</button>
   <button [matMenuTriggerFor]="importMenu" mat-menu-item>Import</button>
 </mat-menu>
-
 <mat-menu #exportMenu="matMenu">
   <button (click)="exportJSON()" mat-menu-item>JSON</button>
   <button mat-menu-item>PNG</button>
   <button mat-menu-item>RDF</button>
 </mat-menu>
-
 <mat-menu #importMenu="matMenu">
   <button (click)="openFilePicker()" mat-menu-item>JSON</button>
 </mat-menu>
@@ -94,7 +86,6 @@
     <mat-checkbox (click)="$event.stopPropagation()">Links Labels</mat-checkbox>
   </button>
 </mat-menu>
-
 <mat-menu #dimensionsMenu="matMenu" [overlapTrigger]="false">
   <div
     (click)="$event.stopPropagation()"
