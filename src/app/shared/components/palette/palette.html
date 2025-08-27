@@ -1,9 +1,9 @@
-<mat-tab-group mat-align-tabs="start">
+<mat-tab-group class="mat-tab-label-container" mat-align-tabs="start">
   <mat-tab>
     <ng-template mat-tab-label>
       <mat-icon matTooltip="Elements">widgets</mat-icon>
     </ng-template>
-    <div class="elementsPalette">
+    <div class="elements-palette">
       @for (element of elements; track $index) {
         <div class="palette-item">
           <app-palette-item [element]="element" />

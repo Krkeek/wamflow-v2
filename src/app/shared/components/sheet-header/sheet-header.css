@@ -38,7 +38,6 @@
   outline: none;
   font: inherit;
   background: transparent;
-  font-size: 1.2rem;
   padding-left: 0.5rem;
 }
 
@@ -87,4 +86,13 @@ mat-button-toggle-group {
   border-left: 1px solid var(--defaultBorder-color);
   border-right: 1px solid var(--defaultBorder-color);
 
+}
+
+
+@media (max-width: 1920px) {
+  mat-button-toggle-group {
+    transform: scale(0.9);
+    transform-origin: left center;
+    margin-right: 0;
+  }
 }

@@ -15,14 +15,18 @@
 
 .left-side-nav {
   width: 10%;
-  border: none !important;
 
 }
 
 .right-side-nav {
   width: 20%;
-  border: none !important;
+}
 
+.left-side-nav,
+.right-side-nav {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 

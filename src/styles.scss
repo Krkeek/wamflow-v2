@@ -63,11 +63,10 @@ $my-theme: mat.m2-define-light-theme((
 
 @include mat.all-component-themes($my-theme);
 
-
 @media (max-width: 1920px) {
-  html { font-size: 14px; }
-}
-
-@media (min-width: 1280px) and (max-width: 1920px) {
-  html { font-size: clamp(13.5px, 0.9vw + 6px, 15px); }
+  mat-icon {
+    font-size: 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+  }
 }
