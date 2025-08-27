@@ -20,7 +20,7 @@
 
       <mat-button-toggle-group
         appearance="legacy"
-        matTooltip="Link Type"
+        matTooltip="Link Types"
         [value]="activeLinkType"
         (change)="onLinkTypeChange($event.value)">
         @for (link of linkOptions; track $index){
@@ -32,8 +32,8 @@
         <mat-icon>tune</mat-icon>
       </button>
 
-      <button [matMenuTriggerFor]="settings" class="settingDiv" matTooltip="Settings">
-        <mat-icon>settings</mat-icon>
+      <button [matMenuTriggerFor]="more" class="settingDiv" matTooltip="Actions">
+        <mat-icon>more_vert</mat-icon>
       </button>
       <button [style.color]="panelState.right ? 'var(--ancient--color)' : ''" (click)="this.navControlService.toggle('right')" class="settingDiv" matTooltip="Dock Right Panel">
         <mat-icon>
@@ -55,7 +55,7 @@
     <mat-icon>visibility</mat-icon>
     Visibility</button>
 </mat-menu>
-<mat-menu #settings="matMenu">
+<mat-menu #more="matMenu">
   <button mat-menu-item>
     <mat-icon>save</mat-icon>
     Save
