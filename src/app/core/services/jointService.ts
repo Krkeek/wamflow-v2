@@ -478,8 +478,13 @@ export class JointService implements OnDestroy {
     if (saved?.data) {
       try {
         this._graph.fromJSON(saved.data);
-        if (this._graph.getCells().length != 0)
-          this._snackBar.open('Diagram restored from last session', 'Dismiss', { duration: 3000 });
+        if (this._graph.getCells().length != 0){
+            this._snackBar
+              .open('Restored from last session', 'New Diagram', { duration: 5000 })
+              .onAction().subscribe(() => {
+            this.resetPaper();
+          });
+        }
       } catch {
         this._snackBar.open('Couldn’t restore your diagram', 'Dismiss', { duration: 3000 });
       }
