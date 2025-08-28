@@ -154,8 +154,7 @@ export class JointService implements OnDestroy {
 
 
   public clientToLocal(clientX: number, clientY: number) {
-    if (!this._paper) throw new Error('No paper on clientToLocal');
-    return this._paper?.clientToLocalPoint({ x: clientX, y: clientY });
+    return this.paper?.clientToLocalPoint({ x: clientX, y: clientY });
   }
 
   public setTitle(v: string) {
@@ -207,7 +206,7 @@ export class JointService implements OnDestroy {
   }
 
   public updatePaperDimensions(width: number, height: number) {
-    this._paper?.setDimensions(width, height);
+    this.paper.setDimensions(width, height);
   }
 
 
@@ -259,6 +258,7 @@ export class JointService implements OnDestroy {
       },
     });
 
+    this.unhighlightCells(this.graph.getCells().map(c => c.id))
     this.initToolTips();
     this.bindPaperEvents();
     this.ready.set(true);
@@ -472,24 +472,23 @@ export class JointService implements OnDestroy {
 
 
   public ngOnDestroy(): void {
-    if (!this._paper || !this.graph) throw new Error('No _paper or _graph found.');
 
-    this._paper.off('element:pointerdown');
-    this._paper.off('element:mouseover');
-    this._paper.off('element:mouseleave');
-    this._paper.off('element:pointermove');
-    this._paper.off('element:pointerup');
-    this._paper.off('element:mouseenter');
-    this._paper.off('element:mouseleave');
-    this._paper.off('link:contextmenu');
-    this._paper.off('link:pointerdown');
-    this._paper.off('link:pointerup');
-    this._paper.off('link:mouseenter');
-    this._paper.off('blank:pointerclick');
-    this._paper.off('blank:pointerdown');
-    this._paper.off('blank:pointerup');
-    this._paper.off('blank:pointermove');
-    this._paper.off('blank:mouseover');
+    this.paper.off('element:pointerdown');
+    this.paper.off('element:mouseover');
+    this.paper.off('element:mouseleave');
+    this.paper.off('element:pointermove');
+    this.paper.off('element:pointerup');
+    this.paper.off('element:mouseenter');
+    this.paper.off('element:mouseleave');
+    this.paper.off('link:contextmenu');
+    this.paper.off('link:pointerdown');
+    this.paper.off('link:pointerup');
+    this.paper.off('link:mouseenter');
+    this.paper.off('blank:pointerclick');
+    this.paper.off('blank:pointerdown');
+    this.paper.off('blank:pointerup');
+    this.paper.off('blank:pointermove');
+    this.paper.off('blank:mouseover');
     this.graph.off('change');
     this.graph.off('add');
     this.graph.off('remove');
@@ -544,7 +543,8 @@ export class JointService implements OnDestroy {
             this.resetPaper();
           });
         }
-      } catch {
+      } catch(e) {
+        console.error(e)
         this._snackBar.open('Couldn’t restore your diagram', 'Dismiss', { duration: 3000 });
       }
     }
@@ -555,8 +555,7 @@ export class JointService implements OnDestroy {
   }
   private getCellView(cellId: ID): CellView {
     const cell = this.getCellById(cellId);
-    if (!this._paper) throw new Error('No _paper found.');
-    return cell.findView(this._paper);
+    return cell.findView(this.paper);
   }
 
   private setEdgeHighlight(view: dia.ElementView, enabled: boolean): void {
@@ -641,34 +640,29 @@ export class JointService implements OnDestroy {
 
   private showToolView = (cellView: dia.CellView) => {
     const model = cellView.model;
-
-    if (model.isElement()) {
-      if (!this.selectedCells$.value.find((id) => id == model.id)) {
-        this.selectSingle(model.id);
-      }
-      cellView.addTools(this.toolsView);
+    if (!this.selectedCells$.value.find((id) => id == model.id)) {
+      this.selectSingle(model.id);
     }
-    if (model.isLink()) {
-      cellView.addTools(this.toolsViewLinks);
+    const tools = model.isElement() ? this.toolsView : model.isLink() ? this.toolsViewLinks : null;
+    if (tools) {
+      cellView.addTools(tools);
     }
   };
 
   private bindPaperEvents(): void {
-    if (!this._paper || !this.graph) throw new Error('No _paper or _graph found.');
-
     // attach
-    this._paper.on('element:pointerdown', this.onElementPointerDown);
-    this._paper.on('element:pointermove', this.onElementPointerMove);
-    this._paper.on('element:pointerup', this.onElementPointerUp);
-    this._paper.on('element:contextmenu', this.onElementContextMenu);
-    this._paper.on('element:mouseenter', this.onElementMouseEnter);
-    this._paper.on('element:mouseleave', this.onElementMouseLeave);
-    this._paper.on('link:contextmenu', this.onLinkContextMenu);
-    this._paper.on('link:pointerdown', this.onLinkPointerDown);
-    this._paper.on('blank:pointerclick', this.onBlankPointerClick);
-    this._paper.on('blank:pointerdown', this.onBlankPointerDown);
-    this._paper.on('blank:pointerup', this.onBlankPointerUp);
-    this._paper.on('blank:pointermove', this.onBlankPointerMove);
+    this.paper.on('element:pointerdown', this.onElementPointerDown);
+    this.paper.on('element:pointermove', this.onElementPointerMove);
+    this.paper.on('element:pointerup', this.onElementPointerUp);
+    this.paper.on('element:contextmenu', this.onElementContextMenu);
+    this.paper.on('element:mouseenter', this.onElementMouseEnter);
+    this.paper.on('element:mouseleave', this.onElementMouseLeave);
+    this.paper.on('link:contextmenu', this.onLinkContextMenu);
+    this.paper.on('link:pointerdown', this.onLinkPointerDown);
+    this.paper.on('blank:pointerclick', this.onBlankPointerClick);
+    this.paper.on('blank:pointerdown', this.onBlankPointerDown);
+    this.paper.on('blank:pointerup', this.onBlankPointerUp);
+    this.paper.on('blank:pointermove', this.onBlankPointerMove);
     this.graph.on('remove', this.onGraphRemove);
     this.graph.on('add', this.onGraphAdd);
     this.graph.on('change', this.onGraphChange);
@@ -794,7 +788,7 @@ export class JointService implements OnDestroy {
   private createRubberNode = (x: number, y: number) => {
     this._origin = { x, y };
 
-    const svg = this._paper?.svg as SVGSVGElement | undefined;
+    const svg = this.paper.svg as SVGSVGElement | undefined;
     if (!svg) return;
     const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     r.setAttribute('x', String(x));
@@ -818,7 +812,7 @@ export class JointService implements OnDestroy {
     const h = Math.abs(y - this._origin.y);
     const area = new g.Rect(x0, y0, w, h);
 
-    const views = this._paper?.findCellViewsInArea(area, {
+    const views = this.paper.findCellViewsInArea(area, {
       strict: false,
       inflated: 2
     });
@@ -845,7 +839,6 @@ export class JointService implements OnDestroy {
     this._rubberNode.setAttribute('height', String(h));
   };
   private updateMultiSelectionBox(selectedIds: ID[]) {
-    if (!this._paper) return;
     if (selectedIds.length < 2) return;
 
     if (!selectedIds.length) {
@@ -855,7 +848,7 @@ export class JointService implements OnDestroy {
     const views = selectedIds
       .map((id) => this.graph?.getCell(id))
       .filter((c): c is dia.Element => !!c && c.isElement())
-      .map((el) => el.findView(this._paper!))
+      .map((el) => el.findView(this.paper))
       .filter((v): v is dia.ElementView => !!v);
 
     if (!views.length) {
@@ -868,7 +861,7 @@ export class JointService implements OnDestroy {
       bbox = bbox.union(views[i].getBBox({ useModelGeometry: true }));
     }
     bbox = bbox.inflate(6);
-    const svg = this._paper.svg as SVGSVGElement;
+    const svg = this.paper.svg as SVGSVGElement;
     const viewportLayer =
       (svg.querySelector('.joint-cells-layer.joint-viewport') as SVGGElement) ??
       (svg.firstElementChild as SVGGElement);
@@ -1115,7 +1108,6 @@ export class JointService implements OnDestroy {
   }
 
   private beginGroupResize() {
-    if (!this._paper || !this.graph) return;
 
     const ids = this.getSelectedIds();
     if (ids.length < 2) return; // only for multi-select (or allow 1 if you like)
@@ -1124,7 +1116,7 @@ export class JointService implements OnDestroy {
     const views = ids
       .map((id) => this.graph!.getCell(id))
       .filter((c): c is dia.Element => !!c && c.isElement())
-      .map((el) => el.findView(this._paper!))
+      .map((el) => el.findView(this.paper))
       .filter((v): v is dia.ElementView => !!v);
 
     if (!views.length) return;
@@ -1150,7 +1142,6 @@ export class JointService implements OnDestroy {
 
     // Attach move/up listeners on the document so dragging stays smooth
     const onMove = (ev: MouseEvent | Touch) => {
-      if (!this._paper) return;
       const { x, y } = this.clientToLocal(ev.clientX, ev.clientY);
       this.performGroupResize(x, y);
     };
