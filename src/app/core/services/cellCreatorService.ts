@@ -23,7 +23,6 @@ export class CellCreatorService {
 
   public createLink(link: WamLinks): CustomLink {
     const def = WAM_LINK_DATA[link];
-    console.log(def);
     if (!def) throw new Error(`Unknown link type: ${link}`);
     return new CustomLink({
       attrs: def.attrs,

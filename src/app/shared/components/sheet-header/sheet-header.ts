@@ -46,10 +46,9 @@ export class SheetHeader implements OnInit {
 
   protected linkOptions = [
     { label: 'Invocation', value: WamLinks.Invocation },
-    { label: 'Legacy',     value: WamLinks.LegacyRelationship },
-    { label: 'Trust',      value: WamLinks.TrustRelationship },
+    { label: 'Legacy', value: WamLinks.LegacyRelationship },
+    { label: 'Trust', value: WamLinks.TrustRelationship },
   ];
-
 
   onLinkTypeChange(val: WamLinks) {
     this.setActiveLinkType(val);
