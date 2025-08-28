@@ -12,7 +12,7 @@ import {
   pairwise,
   Subject,
   switchMap,
-  takeUntil
+  takeUntil,
 } from 'rxjs';
 import { ResizeControl } from '../Infrastructure/ResizeControl';
 import { DialogService } from './dialogService';
@@ -50,14 +50,14 @@ export class JointService implements OnDestroy {
   private readonly _cellCreatorService = inject(CellCreatorService);
 
   private _graph?: dia.Graph;
-  private get graph(){
-    if(!this._graph) throw 'No graph defined';
+  private get graph() {
+    if (!this._graph) throw 'No graph defined';
     return this._graph;
   }
 
   private _paper?: dia.Paper;
-  private get paper(){
-    if(!this._paper) throw 'No paper defined';
+  private get paper() {
+    if (!this._paper) throw 'No paper defined';
     return this._paper;
   }
 
@@ -88,7 +88,7 @@ export class JointService implements OnDestroy {
     },
   };
 
-  private _canvas?:HTMLElement
+  private _canvas?: HTMLElement;
   private get canvas() {
     if (!this._canvas) throw 'Canvas is undefined';
     return this._canvas;
@@ -151,8 +151,6 @@ export class JointService implements OnDestroy {
     return this._toolsViewLinks;
   }
 
-
-
   public clientToLocal(clientX: number, clientY: number) {
     return this.paper?.clientToLocalPoint({ x: clientX, y: clientY });
   }
@@ -162,7 +160,6 @@ export class JointService implements OnDestroy {
   }
 
   public triggerKeyboardAction(e: KeyboardEvent) {
-
     if (this.selectedCells$.value.length != 0) {
       if (e.key === 'Backspace' || e.key === 'Delete') {
         e.preventDefault();
@@ -208,7 +205,6 @@ export class JointService implements OnDestroy {
   public updatePaperDimensions(width: number, height: number) {
     this.paper.setDimensions(width, height);
   }
-
 
   public async initPaper(canvas: HTMLElement): Promise<void> {
     this._canvas = canvas;
@@ -258,7 +254,7 @@ export class JointService implements OnDestroy {
       },
     });
 
-    this.unhighlightCells(this.graph.getCells().map(c => c.id))
+    this.unhighlightCells(this.graph.getCells().map((c) => c.id));
     this.initToolTips();
     this.bindPaperEvents();
     this.ready.set(true);
@@ -310,6 +306,8 @@ export class JointService implements OnDestroy {
       newCell.attr({
         body: { fill: JOINT_CONSTRAINTS.defaultPaletteFill },
         path: { fill: JOINT_CONSTRAINTS.defaultPaletteFill },
+        bottom: { fill: JOINT_CONSTRAINTS.defaultPaletteFill },
+        top: { fill: JOINT_CONSTRAINTS.defaultPaletteFill },
       });
       newCell.position(20, 10);
       newCell.addTo(specificGraph);
@@ -353,14 +351,14 @@ export class JointService implements OnDestroy {
       if (cell.isElement()) {
         cell.attr('body/stroke', JOINT_CONSTRAINTS.primaryStroke);
         cell.attr('path/stroke', JOINT_CONSTRAINTS.primaryStroke);
+        cell.attr('bottom/stroke', JOINT_CONSTRAINTS.primaryStroke);
         cell.attr('top/stroke', JOINT_CONSTRAINTS.primaryStroke);
       }
 
       if (cell.isLink()) {
         cell.attr('line/stroke', JOINT_CONSTRAINTS.primaryStroke);
       }
-
-    })
+    });
   }
 
   public unhighlightCells(cellIds: ID[]): void {
@@ -376,13 +374,14 @@ export class JointService implements OnDestroy {
       if (cell.isElement()) {
         cell.attr('body/stroke', JOINT_CONSTRAINTS.defaultStroke);
         cell.attr('path/stroke', JOINT_CONSTRAINTS.defaultStroke);
+        cell.attr('bottom/stroke', JOINT_CONSTRAINTS.defaultStroke);
         cell.attr('top/stroke', JOINT_CONSTRAINTS.defaultStroke);
       }
 
       if (cell.isLink()) {
         cell.attr('line/stroke', JOINT_CONSTRAINTS.defaultStroke);
       }
-    })
+    });
   }
 
   public getCellById(cellId: ID) {
@@ -392,7 +391,6 @@ export class JointService implements OnDestroy {
   }
 
   public duplicateCell(cellId: ID): void {
-
     const cell = this.graph.getCell(cellId);
     if (!cell || !cell.isElement()) return;
 
@@ -427,52 +425,47 @@ export class JointService implements OnDestroy {
     this._snackBar.open('Diagram exported as JSON', 'Dismiss', { duration: 2500 });
   };
 
-
-
   public exportPNG = async () => {
     if (this.graph.getCells().length === 0) {
       this._snackBar.open('The diagram is empty', 'Dismiss', { duration: 3000 });
       return;
     }
-    this.exportPNGPrepare('before')
-    html2canvas(this.canvas)
-        .then((canvas) =>{
-          const based64image = canvas.toDataURL('image/png');
-          const anchor = document.createElement('a');
-          anchor.setAttribute('href', based64image)
-          anchor.setAttribute('download', this.title())
-          anchor.click()
-          anchor.remove()
-        })
-    this.exportPNGPrepare('after')
+    this.exportPNGPrepare('before');
+    html2canvas(this.canvas).then((canvas) => {
+      const based64image = canvas.toDataURL('image/png');
+      const anchor = document.createElement('a');
+      anchor.setAttribute('href', based64image);
+      anchor.setAttribute('download', this.title());
+      anchor.click();
+      anchor.remove();
+    });
+    this.exportPNGPrepare('after');
     this._snackBar.open('Diagram exported as PNG', 'Dismiss', { duration: 2500 });
   };
 
-  private exportPNGPrepare = (stage: 'before' | 'after') =>{
+  private exportPNGPrepare = (stage: 'before' | 'after') => {
     if (stage === 'before') {
-
-
       if (this._multiBoxG) this._multiBoxG.style.display = 'none';
-      this.unhighlightCells(this.selectedCells$.value)
-      this.paper.setGrid( {name: "mesh", args: {color: 'transparent'}})
+      this.unhighlightCells(this.selectedCells$.value);
+      this.paper.setGrid({ name: 'mesh', args: { color: 'transparent' } });
       this.paper.fitToContent({
         allowNewOrigin: 'any',
         allowNegativeBottomRight: false,
         padding: 5,
-      })
-    }
-    else {
+      });
+    } else {
       if (this._multiBoxG) this._multiBoxG.style.display = '';
-      this.highlightCells(this.selectedCells$.value)
-      this.paper.setDimensions(JOINT_CONSTRAINTS.paperDefaultDimensions.width,JOINT_CONSTRAINTS.paperDefaultDimensions.height);
-      this.paper.translate(0,0);
-      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGrid)
+      this.highlightCells(this.selectedCells$.value);
+      this.paper.setDimensions(
+        JOINT_CONSTRAINTS.paperDefaultDimensions.width,
+        JOINT_CONSTRAINTS.paperDefaultDimensions.height,
+      );
+      this.paper.translate(0, 0);
+      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGrid);
     }
-  }
-
+  };
 
   public ngOnDestroy(): void {
-
     this.paper.off('element:pointerdown');
     this.paper.off('element:mouseover');
     this.paper.off('element:mouseleave');
@@ -531,20 +524,20 @@ export class JointService implements OnDestroy {
   }
 
   private tryLoadingLocalStorageGraph = async () => {
-
     const saved = await this._localStorageService.load();
     if (saved?.data) {
       try {
         this.graph.fromJSON(saved.data);
-        if (this.graph.getCells().length != 0){
-            this._snackBar
-              .open('Restored from last session', 'New Diagram', { duration: 5000 })
-              .onAction().subscribe(() => {
-            this.resetPaper();
-          });
+        if (this.graph.getCells().length != 0) {
+          this._snackBar
+            .open('Restored from last session', 'New Diagram', { duration: 5000 })
+            .onAction()
+            .subscribe(() => {
+              this.resetPaper();
+            });
         }
-      } catch(e) {
-        console.error(e)
+      } catch (e) {
+        console.error(e);
         this._snackBar.open('Couldn’t restore your diagram', 'Dismiss', { duration: 3000 });
       }
     }
@@ -814,11 +807,11 @@ export class JointService implements OnDestroy {
 
     const views = this.paper.findCellViewsInArea(area, {
       strict: false,
-      inflated: 2
+      inflated: 2,
     });
 
     if (views) {
-      const ids: ID[] = views.map(v => String(v.model.id));
+      const ids: ID[] = views.map((v) => String(v.model.id));
       this.setSelection(ids);
       if (this._rubberNode) {
         this._rubberNode.parentNode?.removeChild(this._rubberNode);
@@ -1049,7 +1042,7 @@ export class JointService implements OnDestroy {
       } else if (cell.isLink()) {
         const baseVertices = this._groupBaseVertices.get(id);
         if (baseVertices) {
-          const moved = baseVertices.map(v => ({ x: v.x + dx, y: v.y + dy }));
+          const moved = baseVertices.map((v) => ({ x: v.x + dx, y: v.y + dy }));
           (cell as dia.Link).vertices(moved);
         }
       }
@@ -1090,9 +1083,11 @@ export class JointService implements OnDestroy {
         this._groupBasePos.set(id, { x: px, y: py });
       } else if (cell.isLink()) {
         const vertices = (cell as dia.Link).vertices() || [];
-        this._groupBaseVertices.set(id, vertices.map(v => ({ x: v.x, y: v.y })));
+        this._groupBaseVertices.set(
+          id,
+          vertices.map((v) => ({ x: v.x, y: v.y })),
+        );
       }
-
     }
     this._groupDragActive = true;
   }
@@ -1102,13 +1097,11 @@ export class JointService implements OnDestroy {
     this._groupDragStart = null;
     this._groupBaseVertices.clear();
 
-
     if (this._multiBoxG) this._multiBoxG.removeAttribute('transform');
     this.updateMultiSelectionBox(this.getSelectedIds());
   }
 
   private beginGroupResize() {
-
     const ids = this.getSelectedIds();
     if (ids.length < 2) return; // only for multi-select (or allow 1 if you like)
 

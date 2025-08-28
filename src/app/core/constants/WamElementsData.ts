@@ -28,8 +28,10 @@ export const WAM_ELEMENTS_DATA: Record<
         cursor: 'move',
       },
       edge: {
-        refWidth: '100%', refHeight: '100%',
-        rx: 10, ry: 10,
+        refWidth: '100%',
+        refHeight: '100%',
+        rx: 10,
+        ry: 10,
         fill: 'transparent',
         stroke: 'transparent',
         'stroke-width': 14,
@@ -76,8 +78,10 @@ export const WAM_ELEMENTS_DATA: Record<
         cursor: 'move',
       },
       edge: {
-        refWidth: '100%', refHeight: '100%',
-        rx: 10, ry: 10,
+        refWidth: '100%',
+        refHeight: '100%',
+        rx: 10,
+        ry: 10,
         fill: 'transparent',
         stroke: 'transparent',
         'stroke-width': 14,
@@ -100,9 +104,7 @@ export const WAM_ELEMENTS_DATA: Record<
         tagName: 'rect',
         selector: 'body',
       },
-      { tagName: 'rect',
-        selector: 'edge'
-      },
+      { tagName: 'rect', selector: 'edge' },
       {
         tagName: 'text',
         selector: 'labelOne',
@@ -193,7 +195,6 @@ export const WAM_ELEMENTS_DATA: Record<
       { tagName: 'ellipse', selector: 'edge' },
       { tagName: 'text', selector: 'label' },
     ],
-
   },
   [WamElements.IdentityProvider]: {
     size: { width: 70, height: 70 },
@@ -230,62 +231,36 @@ export const WAM_ELEMENTS_DATA: Record<
       { tagName: 'text', selector: 'label' },
     ],
   },
-  /*
   [WamElements.DataProvider]: {
-    size: { width: 200, height: 200 },
+    size: { width: 70, height: 100 },
     attrs: {
       body: {
-        d: `
-       M0 20
-       a40 calc(w/6.5) 0 01calc(w) 0
-       v50
-       a40 calc(w/6.5) 0 01-calc(w) 0
-       v-50Z
-        `,
-        lateralArea: 10,
-        fill: JOINT_CONSTRAINTS.defaultPaletteFill,
-        stroke: JOINT_CONSTRAINTS.defaultStroke,
-        strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
-        cursor: 'move',
-      },
-      top: {
-        cx: 'calc(w/2)',
-        cy: 19,
-        rx: 'calc(w/2)',
-        ry: 10,
-        fill: JOINT_CONSTRAINTS.defaultPaletteFill,
-        stroke: JOINT_CONSTRAINTS.defaultStroke,
-        strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
-      },
-    },
-    markup: [
-      {
-        tagName: 'path',
-        selector: 'body',
-      },
-      {
-        tagName: 'ellipse',
-        selector: 'top',
-      },
-      {
-        tagName: 'text',
-        selector: 'labelOne',
-      },
-    ],
-  },
-*/
-  [WamElements.DataProvider]: {
-    size: { width: 70, height: 70 },
-    attrs: {
-      body: {
-        refWidth: '100%',
-        refHeight: '100%',
-        rx: 10,
-        ry: 10,
         fill: JOINT_CONSTRAINTS.defaultFill,
         stroke: JOINT_CONSTRAINTS.defaultStroke,
         strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
         cursor: 'move',
+      },
+      edge: {
+        refWidth: '100%',
+        refHeight: '80%',
+        rx: 10,
+        ry: 10,
+        fill: 'transparent',
+        stroke: 'transparent',
+        'stroke-width': 14,
+        magnet: true,
+        'pointer-events': 'stroke',
+        cursor: 'crosshair',
+      },
+      top: {
+        fill: JOINT_CONSTRAINTS.defaultFill,
+        stroke: JOINT_CONSTRAINTS.defaultStroke,
+        strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
+      },
+      bottom: {
+        fill: JOINT_CONSTRAINTS.defaultFill,
+        stroke: JOINT_CONSTRAINTS.defaultStroke,
+        strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
       },
       labelOne: {
         text: '',
@@ -295,17 +270,37 @@ export const WAM_ELEMENTS_DATA: Record<
         textVerticalAnchor: 'middle',
         fontSize: 12,
         fill: JOINT_CONSTRAINTS.textColor,
+        pointerEvents: 'none',
       },
     },
     markup: [
       {
-        tagName: 'rect',
+        tagName: 'path',
         selector: 'body',
+        attributes: {
+          d: 'M 0 10 L 0 70 M 70 70 L 70 10 Z',
+          fill: JOINT_CONSTRAINTS.defaultFill,
+          stroke: JOINT_CONSTRAINTS.defaultStroke,
+          'stroke-width': JOINT_CONSTRAINTS.strokeWidth,
+        },
       },
       {
-        tagName: 'text',
-        selector: 'labelOne',
+        tagName: 'ellipse',
+        selector: 'top',
+        attributes: { cx: 35, cy: 10, rx: 35, ry: 10 },
       },
+      {
+        tagName: 'path',
+        selector: 'bottom',
+        attributes: {
+          d: 'M 0 70 A 35 10 0 0 0 70 70',
+          fill: 'none',
+          stroke: JOINT_CONSTRAINTS.defaultStroke,
+          'stroke-width': JOINT_CONSTRAINTS.strokeWidth,
+        },
+      },
+      { tagName: 'text', selector: 'labelOne' },
+      { tagName: 'rect', selector: 'edge' },
     ],
   },
 };
