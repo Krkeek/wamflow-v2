@@ -69,6 +69,7 @@ export class JointService implements OnDestroy {
   private _groupDragActive = false;
   private _groupDragStart: { x: number; y: number } | null = null;
   private _groupBasePos = new Map<ID, { x: number; y: number }>();
+  private _groupBaseVertices = new Map<ID, dia.Point[]>();
   private _origin?: dia.Point;
   private _rubberNode?: SVGRectElement;
   private _multiBoxG?: SVGGElement;
@@ -281,6 +282,8 @@ export class JointService implements OnDestroy {
       })
       .subscribe((ok) => {
         if (ok) {
+          this.clearAllSelection();
+          this.removeMultiSelectionBox();
           this.graph.clear();
           this._snackBar.open('Diagram cleared successfully', 'Dismiss', { duration: 3000 });
         }
@@ -698,6 +701,7 @@ export class JointService implements OnDestroy {
     }
     this._multiBoxG = undefined;
     this._multiBoxDeleteButton = undefined;
+    this._multiBoxResizeButton = undefined;
     this._multiBoxRect = undefined;
   }
 
@@ -814,16 +818,20 @@ export class JointService implements OnDestroy {
     const h = Math.abs(y - this._origin.y);
     const area = new g.Rect(x0, y0, w, h);
 
-    const views = this._paper?.findElementViewsInArea(area) ?? [];
+    const views = this._paper?.findCellViewsInArea(area, {
+      strict: false,
+      inflated: 2
+    });
 
-    const ids: ID[] = views.filter((v) => v.model.isElement()).map((v) => String(v.model.id));
-    this.setSelection(ids);
-
-    if (this._rubberNode) {
-      this._rubberNode.parentNode?.removeChild(this._rubberNode);
-      this._rubberNode = undefined;
+    if (views) {
+      const ids: ID[] = views.map(v => String(v.model.id));
+      this.setSelection(ids);
+      if (this._rubberNode) {
+        this._rubberNode.parentNode?.removeChild(this._rubberNode);
+        this._rubberNode = undefined;
+      }
+      this._origin = undefined;
     }
-    this._origin = undefined;
   };
   private adjustRubberNodeOnMove = (x: number, y: number) => {
     if (!this._origin || !this._rubberNode) return;
@@ -1045,6 +1053,12 @@ export class JointService implements OnDestroy {
       const cell = this.graph?.getCell(id);
       if (base && cell && cell.isElement()) {
         (cell as dia.Element).position(base.x + dx, base.y + dy);
+      } else if (cell.isLink()) {
+        const baseVertices = this._groupBaseVertices.get(id);
+        if (baseVertices) {
+          const moved = baseVertices.map(v => ({ x: v.x + dx, y: v.y + dy }));
+          (cell as dia.Link).vertices(moved);
+        }
       }
     }
 
@@ -1081,7 +1095,11 @@ export class JointService implements OnDestroy {
       if (cell && cell.isElement()) {
         const { x: px, y: py } = (cell as dia.Element).position();
         this._groupBasePos.set(id, { x: px, y: py });
+      } else if (cell.isLink()) {
+        const vertices = (cell as dia.Link).vertices() || [];
+        this._groupBaseVertices.set(id, vertices.map(v => ({ x: v.x, y: v.y })));
       }
+
     }
     this._groupDragActive = true;
   }
@@ -1089,6 +1107,8 @@ export class JointService implements OnDestroy {
     this._groupDragActive = false;
     this._groupBasePos.clear();
     this._groupDragStart = null;
+    this._groupBaseVertices.clear();
+
 
     if (this._multiBoxG) this._multiBoxG.removeAttribute('transform');
     this.updateMultiSelectionBox(this.getSelectedIds());
