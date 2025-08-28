@@ -13,7 +13,7 @@ export class CustomLink extends dia.Link {
     return {
       ...super.defaults,
       type: 'custom.Link',
-      markup: []
+      markup: [],
     };
   }
 }

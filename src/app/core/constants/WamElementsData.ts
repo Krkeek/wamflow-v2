@@ -28,7 +28,7 @@ export const WAM_ELEMENTS_DATA: Record<
   [WamElements.SecurityRealm]: {
     size: { width: 120, height: 80 },
     attrs: {
-      data: {...dummySecurityRealm, type:'Security Realm' } as CellDataDto,
+      data: { ...dummySecurityRealm, type: 'Security Realm' } as CellDataDto,
       path: {
         refDResetOffset: `M7.2 121S0 121 0 114.95L0 6.05S0 0 7.2 0L280.8 0S288 0 289.44 6.05L288 114.95S288 121 280.8 121ZM238 0 289.44 24.2`,
         fill: JOINT_CONSTRAINTS.defaultFill,
@@ -124,7 +124,7 @@ export const WAM_ELEMENTS_DATA: Record<
   [WamElements.Service]: {
     size: { width: 70, height: 65 },
     attrs: {
-      data: {...dummyService, type:'Service' } as CellDataDto,
+      data: { ...dummyService, type: 'Service' } as CellDataDto,
       path: {
         refDResetOffset: `M31.7544 8.43415C36.7317 -0.186735 49.1748 -0.186749 54.1521 8.43413L82.1492 56.9266C87.1265 65.5475 80.9049 76.3236 70.9504 76.3236H14.9561C5.0016 76.3236 -1.22 65.5475 3.75727 56.9266L31.7544 8.43415Z`,
         strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
@@ -169,7 +169,7 @@ export const WAM_ELEMENTS_DATA: Record<
   [WamElements.ProcessUnit]: {
     size: { width: 70, height: 70 },
     attrs: {
-      data: {...dummyProcessUnit, type:'Process Unit' } as CellDataDto,
+      data: { ...dummyProcessUnit, type: 'Process Unit' } as CellDataDto,
       body: {
         refCx: '50%',
         refCy: '50%',
@@ -211,7 +211,7 @@ export const WAM_ELEMENTS_DATA: Record<
   [WamElements.IdentityProvider]: {
     size: { width: 70, height: 70 },
     attrs: {
-      data: {...dummyIdentityProvider, type:'Identity Provider' } as CellDataDto,
+      data: { ...dummyIdentityProvider, type: 'Identity Provider' } as CellDataDto,
       body: {
         refDResetOffset: `M74.3946 65.3453V11.8404C74.3946 3.30662 64.0769 -0.967114 58.0426 5.06717L4.53775 58.5721C-1.49653 64.6063 2.77722 74.924 11.311 74.924H64.8158C70.106 74.924 74.3946 70.6355 74.3946 65.3453Z`,
         fill: JOINT_CONSTRAINTS.defaultFill,
