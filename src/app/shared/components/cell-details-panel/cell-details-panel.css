@@ -7,7 +7,6 @@
   background-color: var(--ancientTwo-color);
   padding: 1rem;
   box-sizing: border-box;
-  overflow: auto;
 }
 
 :host:has(.no-selected) {
@@ -44,4 +43,17 @@ mat-slide-toggle {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+
+.content-div {
+  overflow: auto;
+  padding-top: 0.5rem;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.content-div::-webkit-scrollbar {
+  display: none;
 }

@@ -1,9 +1,12 @@
 <div class="container">
   <div class="left-side">
-    <button  [style.color]="panelState.left ? 'var(--ancient--color)' : ''"   (click)="this.navControlService.toggle('left')" class="settingDiv" matTooltip="Dock Left Panel">
-      <mat-icon>
-        {{ panelState.left ? 'align_horizontal_left' : 'align_horizontal_right' }}
-      </mat-icon>
+    <button
+      [style.color]="panelState.left ? 'var(--ancient--color)' : ''"
+      (click)="this.navControlService.toggle('left')"
+      class="settingDiv"
+      matTooltip="Dock Left Panel"
+    >
+      <span class="material-symbols-outlined"> dock_to_right </span>
     </button>
     <input
       [(ngModel)]="title"
@@ -13,38 +16,38 @@
       placeholder="Untitled Diagram"
     />
   </div>
-  <div>
-  </div>
+  <div></div>
 
   <div class="right-side">
+    <mat-button-toggle-group
+      appearance="legacy"
+      matTooltip="Link Types"
+      [value]="activeLinkType"
+      (change)="onLinkTypeChange($event.value)"
+    >
+      @for (link of linkOptions; track $index) {
+        <mat-button-toggle [value]="link.value">{{ link.label }}</mat-button-toggle>
+      }
+    </mat-button-toggle-group>
 
-      <mat-button-toggle-group
-        appearance="legacy"
-        matTooltip="Link Types"
-        [value]="activeLinkType"
-        (change)="onLinkTypeChange($event.value)">
-        @for (link of linkOptions; track $index){
-          <mat-button-toggle  [value]="link.value">{{ link.label }}</mat-button-toggle>
-        }
-      </mat-button-toggle-group>
+    <button [matMenuTriggerFor]="tune" class="settingDiv" matTooltip="Preferences">
+      <mat-icon>tune</mat-icon>
+    </button>
 
-      <button [matMenuTriggerFor]="tune" class="settingDiv" matTooltip="Preferences">
-        <mat-icon>tune</mat-icon>
-      </button>
-
-      <button [matMenuTriggerFor]="more" class="settingDiv" matTooltip="Actions">
-        <mat-icon>more_vert</mat-icon>
-      </button>
-      <button [style.color]="panelState.right ? 'var(--ancient--color)' : ''" (click)="this.navControlService.toggle('right')" class="settingDiv" matTooltip="Dock Right Panel">
-        <mat-icon>
-          {{ panelState.right ? 'align_horizontal_right' : 'align_horizontal_left' }}
-        </mat-icon>
-      </button>
+    <button [matMenuTriggerFor]="more" class="settingDiv" matTooltip="Actions">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <button
+      [style.color]="panelState.right ? 'var(--ancient--color)' : ''"
+      (click)="this.navControlService.toggle('right')"
+      class="settingDiv"
+      matTooltip="Dock Right Panel"
+    >
+      <span class="material-symbols-outlined"> dock_to_left </span>
+    </button>
   </div>
   <input #fileInput (change)="onFileChange($event)" accept=".json" class="InputFile" type="file" />
 </div>
-
-
 
 <mat-menu #tune="matMenu">
   <button [matMenuTriggerFor]="dimensionsMenu" mat-menu-item>
@@ -53,7 +56,8 @@
   </button>
   <button [matMenuTriggerFor]="showMenu" mat-menu-item>
     <mat-icon>visibility</mat-icon>
-    Visibility</button>
+    Visibility
+  </button>
 </mat-menu>
 <mat-menu #more="matMenu">
   <button mat-menu-item>
@@ -75,15 +79,19 @@
 <mat-menu #importMenu="matMenu">
   <button (click)="openFilePicker()" mat-menu-item>JSON</button>
 </mat-menu>
-<mat-menu #showMenu="matMenu">
-  <button mat-menu-item>
-    <mat-checkbox (click)="$event.stopPropagation()">Names</mat-checkbox>
+<mat-menu #showMenu="matMenu" (click)="$event.stopPropagation()">
+  <button mat-menu-item (click)="$event.stopPropagation()">
+    <mat-checkbox [disabled]="uris.checked" #names (click)="$event.stopPropagation()"
+      >Names</mat-checkbox
+    >
   </button>
-  <button mat-menu-item>
-    <mat-checkbox (click)="$event.stopPropagation()">URIs</mat-checkbox>
+  <button mat-menu-item (click)="$event.stopPropagation()">
+    <mat-checkbox [disabled]="names.checked" #uris (click)="$event.stopPropagation()"
+      >URIs</mat-checkbox
+    >
   </button>
-  <button mat-menu-item>
-    <mat-checkbox (click)="$event.stopPropagation()">Links Labels</mat-checkbox>
+  <button mat-menu-item (click)="$event.stopPropagation()">
+    <mat-checkbox (click)="$event.stopPropagation()">Links Names</mat-checkbox>
   </button>
 </mat-menu>
 <mat-menu #dimensionsMenu="matMenu" [overlapTrigger]="false">
@@ -126,9 +134,7 @@
       <button (click)="updatePaperDimensions(1920, 1080)" mat-stroked-button>1920×1080</button>
       <button (click)="updatePaperDimensions(2000, 2000)" mat-stroked-button>2k</button>
       <button (click)="updatePaperDimensions(4000, 4000)" mat-stroked-button>4k</button>
-      <button (click)="updatePaperDimensions(4000, 4000)" mat-stroked-button>
-        Reset Default
-      </button>
+      <button (click)="updatePaperDimensions(4000, 4000)" mat-stroked-button>Reset Default</button>
     </div>
   </div>
 </mat-menu>
