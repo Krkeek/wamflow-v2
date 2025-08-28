@@ -1,0 +1,82 @@
+<div class="header">
+  <div>
+    Application
+  </div>
+  <div class="right-side">
+    <button class="actions-button" matTooltip="Reorder Layer">
+      <mat-icon>layers</mat-icon>
+    </button>
+    <button [matMenuTriggerFor]="more" class="actions-button" matTooltip="Menu">
+      <mat-icon>menu</mat-icon>
+    </button>
+  </div>
+
+</div>
+<div class="content">
+  <mat-form-field >
+    <mat-label>Enter name</mat-label>
+    <input
+      matInput
+    />
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Select me</mat-label>
+    <mat-select>
+      <mat-option value="option">Option1</mat-option>
+      <mat-option value="option">Option2</mat-option>
+      <mat-option value="option">Option3</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field >
+    <mat-label>Enter name</mat-label>
+    <input
+      matInput
+    />
+  </mat-form-field>
+  <mat-form-field >
+    <mat-label>Enter name</mat-label>
+    <input
+      matInput
+    />
+  </mat-form-field>
+  <mat-form-field >
+    <mat-label>Enter name</mat-label>
+    <input
+      matInput
+    />
+  </mat-form-field>
+  <mat-form-field >
+    <mat-label>Enter name</mat-label>
+    <input
+      matInput
+    />
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Textarea</mat-label>
+    <textarea autocomplete="off" matInput></textarea>
+  </mat-form-field>
+</div>
+
+
+
+<mat-menu #more>
+  <button  mat-menu-item>
+    <mat-icon>format_list_bulleted_add</mat-icon>
+    Configure
+  </button>
+  <button  mat-menu-item>
+    <mat-icon>content_copy</mat-icon>
+    Copy
+  </button>
+  <button  mat-menu-item>
+    <mat-icon> delete</mat-icon>
+    Delete
+  </button>
+  <button  mat-menu-item>
+    <mat-icon> repeat</mat-icon>
+    Reset
+  </button>
+</mat-menu>

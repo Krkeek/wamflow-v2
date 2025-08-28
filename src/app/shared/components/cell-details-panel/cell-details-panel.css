@@ -1,0 +1,34 @@
+:host {
+  height: 100%;
+  border-radius: var(--defaultBorderRadius);
+  display: flex;
+  flex-direction: column;
+  margin-left: 0.5rem;
+  background-color: var(--ancientTwo-color);
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow: auto;
+}
+.header {
+  margin-bottom: 10%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.content > * {
+  width: 100%;
+}
+
+.actions-button {
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.right-side {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
