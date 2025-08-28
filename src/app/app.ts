@@ -26,6 +26,13 @@ export class App {
   @HostListener('window:keydown', ['$event'])
   onDocKeydown(e: KeyboardEvent) {
     if (this.dialog.openDialogs.length) return;
+
+    const target = e.target as HTMLElement | null;
+    const tag = target?.tagName?.toLowerCase();
+
+    if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) {
+      return;
+    }
     this.jointService.triggerKeyboardAction(e);
   }
 }

@@ -29,6 +29,7 @@ import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
 import CellView = dia.CellView;
 import html2canvas from 'html2canvas';
+import { CellDataDto } from '../dtos/cell-data.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -64,7 +65,8 @@ export class JointService implements OnDestroy {
   private _saveTrigger$ = new Subject<void>();
   private destroy$ = new Subject<void>();
 
-  public _activeLinkType$ = new BehaviorSubject(WamLinks.Invocation);
+  public activeLinkType$ = new BehaviorSubject(WamLinks.Invocation);
+  public currentCellPanelInfo$ = new BehaviorSubject<CellDataDto | null>(null);
 
   private _groupDragActive = false;
   private _groupDragStart: { x: number; y: number } | null = null;
@@ -104,6 +106,7 @@ export class JointService implements OnDestroy {
         const prevSet = new Set(prevIds);
         const currSet = new Set(currIds);
         this.updateMultiSelectionBox(currIds);
+        this.updateCellPanelInfo();
 
         for (const id of prevIds) {
           if (!currSet.has(id)) {
@@ -222,7 +225,7 @@ export class JointService implements OnDestroy {
       gridSize: 10,
       drawGridSize: 30,
       drawGrid: JOINT_CONSTRAINTS.defaultGrid,
-      defaultLink: () => this._cellCreatorService.createLink(this._activeLinkType$.value),
+      defaultLink: () => this._cellCreatorService.createLink(this.activeLinkType$.value),
       cellViewNamespace: this.namespace,
       linkPinning: false,
       defaultConnectionPoint: { name: 'boundary' },
@@ -301,6 +304,18 @@ export class JointService implements OnDestroy {
       height: 90,
     });
     return { graph, paper };
+  }
+
+
+  public updateCellPanelInfo(): void {
+    const ids = this.selectedCells$.value;
+    if (ids.length === 1) {
+      const cell = this.getCellById(ids[0]);
+      this.currentCellPanelInfo$.next(cell.prop('attrs/data'))
+    }
+    else {
+      this.currentCellPanelInfo$.next(null);
+    }
   }
 
   public addCell(cell: WamElements, specificGraph?: dia.Graph, specificPaper?: dia.Paper): void {

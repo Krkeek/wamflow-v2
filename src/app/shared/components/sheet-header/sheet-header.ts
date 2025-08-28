@@ -41,8 +41,8 @@ export class SheetHeader implements OnInit {
   protected readonly navControlService = inject(NavControlService);
   private _snackBar = inject(MatSnackBar);
   protected panelState = { left: false, right: false };
-  protected setActiveLinkType = (link: WamLinks) => this.jointService._activeLinkType$.next(link);
-  protected activeLinkType = this.jointService._activeLinkType$.value;
+  protected setActiveLinkType = (link: WamLinks) => this.jointService.activeLinkType$.next(link);
+  protected activeLinkType = this.jointService.activeLinkType$.value;
 
   protected linkOptions = [
     { label: 'Invocation', value: WamLinks.Invocation },

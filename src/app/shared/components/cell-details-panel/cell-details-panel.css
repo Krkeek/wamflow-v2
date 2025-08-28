@@ -9,6 +9,15 @@
   box-sizing: border-box;
   overflow: auto;
 }
+
+:host:has(.no-selected) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--placeHolder-color);
+  font-size: 0.8rem;
+}
+
 .header {
   margin-bottom: 10%;
   display: flex;
@@ -18,6 +27,10 @@
 
 .content > * {
   width: 100%;
+}
+
+mat-slide-toggle {
+  padding: 0.5rem 0 2rem;
 }
 
 .actions-button {
