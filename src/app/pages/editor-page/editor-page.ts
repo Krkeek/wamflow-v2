@@ -8,6 +8,7 @@ import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/mat
 import { FormsModule } from '@angular/forms';
 import { NavControlService } from '../../core/services/navControlService';
 import { Footer } from '../../shared/components/footer/footer';
+import { CellDetailsPanel } from '../../shared/components/cell-details-panel/cell-details-panel';
 
 @Component({
   selector: 'app-editor-page',
@@ -20,6 +21,7 @@ import { Footer } from '../../shared/components/footer/footer';
     FormsModule,
     Palette,
     Footer,
+    CellDetailsPanel,
   ],
   templateUrl: './editor-page.html',
   styleUrl: './editor-page.css',

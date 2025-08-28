@@ -1,6 +1,11 @@
 <div class="section">
   <mat-sidenav-container class="sideNavContainer">
-    <mat-sidenav  position="start" mode="side" [(opened)]="this.panelState.left" class="left-side-nav">
+    <mat-sidenav
+      position="start"
+      mode="side"
+      [(opened)]="this.panelState.left"
+      class="left-side-nav"
+    >
       <app-palette />
       <app-footer />
     </mat-sidenav>
@@ -13,7 +18,13 @@
       </div>
     </mat-sidenav-content>
 
-    <mat-sidenav position="end" mode="side"  [(opened)]="this.panelState.right" class="right-side-nav">
+    <mat-sidenav
+      position="end"
+      mode="side"
+      [(opened)]="this.panelState.right"
+      class="right-side-nav"
+    >
+      <app-cell-details-panel />
     </mat-sidenav>
   </mat-sidenav-container>
 </div>

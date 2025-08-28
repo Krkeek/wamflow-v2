@@ -5,8 +5,8 @@ export const JOINT_CONSTRAINTS = {
   defaultFill: 'white',
   defaultPaletteFill: 'transparent',
   defaultStroke: '#000',
-  defaultGrid:  {
-    name: "mesh",
+  defaultGrid: {
+    name: 'mesh',
     args: { color: '#bdbdbd', thickness: 1 },
   } as GridOptions,
   warningFill: '#FFF3CD',

@@ -1,0 +1,85 @@
+@if (dto()) {
+  @let d = dto();
+  <div class="header">
+    <div>
+      {{ dto()?.type || 'Multi Selected' }}
+    </div>
+    <div class="right-side">
+      <button class="actions-button" matTooltip="Reorder Layer">
+        <mat-icon>layers</mat-icon>
+      </button>
+      <button [matMenuTriggerFor]="more" class="actions-button" matTooltip="Menu">
+        <mat-icon>menu</mat-icon>
+      </button>
+    </div>
+  </div>
+  <div class="content-div">
+    <form class="content" [formGroup]="form">
+      <mat-form-field appearance="outline">
+        <mat-label>Name</mat-label>
+        <input matInput formControlName="name" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>URI</mat-label>
+        <input matInput formControlName="uri" />
+      </mat-form-field>
+
+      @for (entry of d?.props | keyvalue; track $index) {
+        @switch (entry.value.type) {
+          @case ('string') {
+            <mat-form-field appearance="outline">
+              <mat-label>{{ entry.value.label || entry.key }}</mat-label>
+              <input matInput [formControlName]="entry.key" />
+            </mat-form-field>
+          }
+          @case ('number') {
+            <mat-form-field appearance="outline">
+              <mat-label>{{ entry.value.label || entry.key }}</mat-label>
+              <input matInput type="number" [formControlName]="entry.key" />
+            </mat-form-field>
+          }
+          @case ('boolean') {
+            <mat-slide-toggle [formControlName]="entry.key">
+              {{ entry.value.label || entry.key }}
+            </mat-slide-toggle>
+          }
+          @case ('enum') {
+            <mat-form-field appearance="outline">
+              <mat-label>{{ entry.value.label || entry.key }}</mat-label>
+              <mat-select [formControlName]="entry.key">
+                @for (opt of castEnumOptions(entry.value.options); track $index) {
+                  <mat-option [value]="opt">{{ opt }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+        }
+      }
+    </form>
+  </div>
+} @else {
+  <div class="no-selected">No single element selected</div>
+}
+
+<mat-menu #more>
+  <button mat-menu-item>
+    <mat-icon>undo</mat-icon>
+    Undo
+  </button>
+  <button mat-menu-item>
+    <mat-icon>format_list_bulleted_add</mat-icon>
+    Configure
+  </button>
+  <button mat-menu-item>
+    <mat-icon>content_copy</mat-icon>
+    Copy
+  </button>
+  <button mat-menu-item>
+    <mat-icon> delete</mat-icon>
+    Delete
+  </button>
+  <button mat-menu-item>
+    <mat-icon> repeat</mat-icon>
+    Reset
+  </button>
+</mat-menu>

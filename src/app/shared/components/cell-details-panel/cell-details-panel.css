@@ -1,0 +1,47 @@
+:host {
+  height: 100%;
+  border-radius: var(--defaultBorderRadius);
+  display: flex;
+  flex-direction: column;
+  margin-left: 0.5rem;
+  background-color: var(--ancientTwo-color);
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+:host:has(.no-selected) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--placeHolder-color);
+  font-size: 0.8rem;
+}
+
+.header {
+  margin-bottom: 10%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.content > * {
+  width: 100%;
+}
+
+mat-slide-toggle {
+  padding: 0.5rem 0 2rem;
+}
+
+.actions-button {
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.right-side {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

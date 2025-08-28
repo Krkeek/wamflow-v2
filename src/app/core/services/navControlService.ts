@@ -7,7 +7,7 @@ type Side = 'left' | 'right';
 export class NavControlService {
   private state = new BehaviorSubject<{ left: boolean; right: boolean }>({
     left: true,
-    right: false,
+    right: true,
   });
 
   public state$ = this.state.asObservable();
