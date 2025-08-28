@@ -243,11 +243,11 @@ export const WAM_ELEMENTS_DATA: Record<
       edge: {
         refWidth: '100%',
         refHeight: '80%',
-        rx: 10,
-        ry: 10,
+        rx: 13,
+        ry: 13,
         fill: 'transparent',
         stroke: 'transparent',
-        'stroke-width': 14,
+        'stroke-width': 10,
         magnet: true,
         'pointer-events': 'stroke',
         cursor: 'crosshair',
@@ -278,7 +278,7 @@ export const WAM_ELEMENTS_DATA: Record<
         tagName: 'path',
         selector: 'body',
         attributes: {
-          d: 'M 0 10 L 0 70 M 70 70 L 70 10 Z',
+          d: 'M 0 70 L 0 10 L 70 10 L 70 70',
           fill: JOINT_CONSTRAINTS.defaultFill,
           stroke: JOINT_CONSTRAINTS.defaultStroke,
           'stroke-width': JOINT_CONSTRAINTS.strokeWidth,
@@ -295,8 +295,6 @@ export const WAM_ELEMENTS_DATA: Record<
         attributes: {
           d: 'M 0 70 A 35 10 0 0 0 70 70',
           fill: 'none',
-          stroke: JOINT_CONSTRAINTS.defaultStroke,
-          'stroke-width': JOINT_CONSTRAINTS.strokeWidth,
         },
       },
       { tagName: 'text', selector: 'labelOne' },
