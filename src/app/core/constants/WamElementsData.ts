@@ -232,7 +232,7 @@ export const WAM_ELEMENTS_DATA: Record<
     ],
   },
   [WamElements.DataProvider]: {
-    size: { width: 70, height: 100 },
+    size: { width: 70, height: 80 },
     attrs: {
       body: {
         fill: JOINT_CONSTRAINTS.defaultFill,
@@ -242,7 +242,7 @@ export const WAM_ELEMENTS_DATA: Record<
       },
       edge: {
         refWidth: '100%',
-        refHeight: '80%',
+        refHeight: '100%',
         rx: 13,
         ry: 13,
         fill: 'transparent',
@@ -256,11 +256,13 @@ export const WAM_ELEMENTS_DATA: Record<
         fill: JOINT_CONSTRAINTS.defaultFill,
         stroke: JOINT_CONSTRAINTS.defaultStroke,
         strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
+        cursor: 'move',
       },
       bottom: {
         fill: JOINT_CONSTRAINTS.defaultFill,
         stroke: JOINT_CONSTRAINTS.defaultStroke,
         strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
+        cursor: 'move',
       },
       labelOne: {
         text: '',
