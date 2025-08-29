@@ -319,6 +319,8 @@ export class JointService implements OnDestroy {
       newCell.attr({
         body: { fill: JOINT_CONSTRAINTS.defaultPaletteFill },
         path: { fill: JOINT_CONSTRAINTS.defaultPaletteFill },
+        bottom: { fill: JOINT_CONSTRAINTS.defaultPaletteFill },
+        top: { fill: JOINT_CONSTRAINTS.defaultPaletteFill },
       });
       newCell.position(20, 10);
       newCell.addTo(specificGraph);
@@ -362,6 +364,7 @@ export class JointService implements OnDestroy {
       if (cell.isElement()) {
         cell.attr('body/stroke', JOINT_CONSTRAINTS.primaryStroke);
         cell.attr('path/stroke', JOINT_CONSTRAINTS.primaryStroke);
+        cell.attr('bottom/stroke', JOINT_CONSTRAINTS.primaryStroke);
         cell.attr('top/stroke', JOINT_CONSTRAINTS.primaryStroke);
       }
 
@@ -384,6 +387,7 @@ export class JointService implements OnDestroy {
       if (cell.isElement()) {
         cell.attr('body/stroke', JOINT_CONSTRAINTS.defaultStroke);
         cell.attr('path/stroke', JOINT_CONSTRAINTS.defaultStroke);
+        cell.attr('bottom/stroke', JOINT_CONSTRAINTS.defaultStroke);
         cell.attr('top/stroke', JOINT_CONSTRAINTS.defaultStroke);
       }
 

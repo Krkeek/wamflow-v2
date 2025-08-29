@@ -3,7 +3,7 @@ import GridOptions = dia.Paper.GridOptions;
 
 export const JOINT_CONSTRAINTS = {
   defaultFill: 'white',
-  defaultPaletteFill: 'transparent',
+  defaultPaletteFill: '#E9ECEF',
   defaultStroke: '#000',
   defaultGrid: {
     name: 'mesh',

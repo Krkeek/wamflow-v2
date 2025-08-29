@@ -10,21 +10,20 @@ import {
   dummyService,
 } from './WamPropertiesData';
 
-export const WAM_ELEMENTS_DATA: Record<
-  WamElements,
-  {
-    size: { width: number; height: number };
-    attrs?: dia.Element.Attributes;
-    ports?:
-      | {
-          groups?: Record<string, dia.Element.PortGroup>;
-          items?: dia.Element.Port[];
-        }
-      | undefined;
+export interface WamElementsDataValue {
+  size: { width: number; height: number };
+  jointElement?: boolean;
+  attrs?: dia.Element.Attributes;
+  ports?:
+    | {
+        groups?: Record<string, dia.Element.PortGroup>;
+        items?: dia.Element.Port[];
+      }
+    | undefined;
+  markup?: dia.Element.Attributes['markup'];
+}
 
-    markup?: dia.Element.Attributes['markup'];
-  }
-> = {
+export const WAM_ELEMENTS_DATA: Record<WamElements, WamElementsDataValue> = {
   [WamElements.SecurityRealm]: {
     size: { width: 120, height: 80 },
     attrs: {
@@ -244,63 +243,28 @@ export const WAM_ELEMENTS_DATA: Record<
       { tagName: 'text', selector: 'label' },
     ],
   },
-  /*
+
   [WamElements.DataProvider]: {
-    size: { width: 200, height: 200 },
+    size: { width: 70, height: 80 },
+    jointElement: true,
     attrs: {
       body: {
-        d: `
-       M0 20
-       a40 calc(w/6.5) 0 01calc(w) 0
-       v50
-       a40 calc(w/6.5) 0 01-calc(w) 0
-       v-50Z
-        `,
-        lateralArea: 10,
-        fill: JOINT_CONSTRAINTS.defaultPaletteFill,
-        stroke: JOINT_CONSTRAINTS.defaultStroke,
-        strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
-        cursor: 'move',
+        'stroke-width': 2.5,
       },
       top: {
-        cx: 'calc(w/2)',
-        cy: 19,
-        rx: 'calc(w/2)',
-        ry: 10,
-        fill: JOINT_CONSTRAINTS.defaultPaletteFill,
-        stroke: JOINT_CONSTRAINTS.defaultStroke,
-        strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
+        'stroke-width': 2.5,
       },
-    },
-    markup: [
-      {
-        tagName: 'path',
-        selector: 'body',
-      },
-      {
-        tagName: 'ellipse',
-        selector: 'top',
-      },
-      {
-        tagName: 'text',
-        selector: 'labelOne',
-      },
-    ],
-  },
-*/
-  [WamElements.DataProvider]: {
-    size: { width: 70, height: 70 },
-    attrs: {
-      data: dummyApplication as CellDataDto,
-      body: {
+      edge: {
         refWidth: '100%',
         refHeight: '100%',
-        rx: 10,
-        ry: 10,
-        fill: JOINT_CONSTRAINTS.defaultFill,
-        stroke: JOINT_CONSTRAINTS.defaultStroke,
-        strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
-        cursor: 'move',
+        rx: 13,
+        ry: 13,
+        fill: 'transparent',
+        stroke: 'transparent',
+        'stroke-width': 10,
+        magnet: true,
+        'pointer-events': 'stroke',
+        cursor: 'crosshair',
       },
       labelOne: {
         text: '',
@@ -310,17 +274,14 @@ export const WAM_ELEMENTS_DATA: Record<
         textVerticalAnchor: 'middle',
         fontSize: 12,
         fill: JOINT_CONSTRAINTS.textColor,
+        pointerEvents: 'none',
       },
     },
     markup: [
-      {
-        tagName: 'rect',
-        selector: 'body',
-      },
-      {
-        tagName: 'text',
-        selector: 'labelOne',
-      },
+      { tagName: 'rect', selector: 'edge' },
+      { tagName: 'text', selector: 'label' },
+      { tagName: 'path', selector: 'body' },
+      { tagName: 'ellipse', selector: 'top' },
     ],
   },
 };
