@@ -248,6 +248,7 @@ export const WAM_ELEMENTS_DATA: Record<WamElements, WamElementsDataValue> = {
     size: { width: 70, height: 80 },
     jointElement: true,
     attrs: {
+      data: { ...dummyIdentityProvider, type: 'Data Provider' } as CellDataDto,
       body: {
         'stroke-width': 2.5,
       },

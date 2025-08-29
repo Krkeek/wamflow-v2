@@ -508,6 +508,10 @@ export class JointService implements OnDestroy {
     this._historyService.snapshot(this.graph);
     const cellsToRemove = this.graph.getCells().filter((cell) => idsToRemove.includes(cell.id));
     this.graph.removeCells(cellsToRemove);
+
+    let deleteMessage = 'Element Deleted';
+    if (cellsToRemove.length > 1) deleteMessage = 'Elements Deleted';
+    this._snackBar.open(deleteMessage, 'Dismiss', { duration: 3000 });
   };
 
   public removeCellById = (idToRemove: ID) => {

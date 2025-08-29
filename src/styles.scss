@@ -11,6 +11,7 @@
   --defaultBorderRadius: 15px;
   --secondaryColor-two: #E9ECEF;
   --placeHolder-color: rgba(0, 0, 0, 0.5);
+  --danger-color: #d9534f
 
 }
 
@@ -72,3 +73,6 @@ $my-theme: mat.m2-define-light-theme((
     height: 20px !important;
   }
 }
+
+
+
