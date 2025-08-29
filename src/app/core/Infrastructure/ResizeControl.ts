@@ -6,7 +6,7 @@ export const ResizeControl = elementTools.Control.extend({
       tagName: 'path',
       selector: 'handle',
       attributes: {
-        d: 'M14 12M3 12h11V2', // arrow head
+        d: 'M14 12M3 12h11V2',
         stroke: 'black',
         'stroke-width': 2,
         fill: 'none',
@@ -18,7 +18,7 @@ export const ResizeControl = elementTools.Control.extend({
   getPosition: function (view: dia.ElementView) {
     const model = view.model;
     const { width, height } = model.size();
-    return { x: width, y: height }; // bottom-right corner
+    return { x: width, y: height };
   },
 
   setPosition(view: dia.ElementView, coordinates: { x: number; y: number }) {
