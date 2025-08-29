@@ -2,21 +2,20 @@ import { WamElements } from '../enums/WamElements';
 import { JOINT_CONSTRAINTS } from './JointConstraints';
 import { dia } from '@joint/core';
 
-export const WAM_ELEMENTS_DATA: Record<
-  WamElements,
-  {
-    size: { width: number; height: number };
-    attrs?: dia.Element.Attributes;
-    ports?:
-      | {
-          groups?: Record<string, dia.Element.PortGroup>;
-          items?: dia.Element.Port[];
-        }
-      | undefined;
+export interface WamElementsDataValue {
+  size: { width: number; height: number };
+  jointElement?: boolean;
+  attrs?: dia.Element.Attributes;
+  ports?:
+    | {
+        groups?: Record<string, dia.Element.PortGroup>;
+        items?: dia.Element.Port[];
+      }
+    | undefined;
 
-    markup?: dia.Element.Attributes['markup'];
-  }
-> = {
+  markup?: dia.Element.Attributes['markup'];
+}
+export const WAM_ELEMENTS_DATA: Record<WamElements, WamElementsDataValue> = {
   [WamElements.SecurityRealm]: {
     size: { width: 120, height: 80 },
     attrs: {
@@ -233,12 +232,13 @@ export const WAM_ELEMENTS_DATA: Record<
   },
   [WamElements.DataProvider]: {
     size: { width: 70, height: 80 },
+    jointElement: true,
     attrs: {
       body: {
-        fill: JOINT_CONSTRAINTS.defaultFill,
-        stroke: JOINT_CONSTRAINTS.defaultStroke,
-        strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
-        cursor: 'move',
+        'stroke-width': 2.5,
+      },
+      top: {
+        'stroke-width': 2.5,
       },
       edge: {
         refWidth: '100%',
@@ -252,18 +252,6 @@ export const WAM_ELEMENTS_DATA: Record<
         'pointer-events': 'stroke',
         cursor: 'crosshair',
       },
-      top: {
-        fill: JOINT_CONSTRAINTS.defaultFill,
-        stroke: JOINT_CONSTRAINTS.defaultStroke,
-        strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
-        cursor: 'move',
-      },
-      bottom: {
-        fill: JOINT_CONSTRAINTS.defaultFill,
-        stroke: JOINT_CONSTRAINTS.defaultStroke,
-        strokeWidth: JOINT_CONSTRAINTS.strokeWidth,
-        cursor: 'move',
-      },
       labelOne: {
         text: '',
         refX: '50%',
@@ -276,31 +264,10 @@ export const WAM_ELEMENTS_DATA: Record<
       },
     },
     markup: [
-      {
-        tagName: 'path',
-        selector: 'body',
-        attributes: {
-          d: 'M 0 70 L 0 10 L 70 10 L 70 70',
-          fill: JOINT_CONSTRAINTS.defaultFill,
-          stroke: JOINT_CONSTRAINTS.defaultStroke,
-          'stroke-width': JOINT_CONSTRAINTS.strokeWidth,
-        },
-      },
-      {
-        tagName: 'ellipse',
-        selector: 'top',
-        attributes: { cx: 35, cy: 10, rx: 35, ry: 10 },
-      },
-      {
-        tagName: 'path',
-        selector: 'bottom',
-        attributes: {
-          d: 'M 0 70 A 35 10 0 0 0 70 70',
-          fill: 'none',
-        },
-      },
-      { tagName: 'text', selector: 'labelOne' },
       { tagName: 'rect', selector: 'edge' },
+      { tagName: 'text', selector: 'label' },
+      { tagName: 'path', selector: 'body' },
+      { tagName: 'ellipse', selector: 'top' },
     ],
   },
 };
