@@ -1,7 +1,13 @@
 import { DataTypes } from '../enums/DataTypes';
 
 export type CellProp =
-  | { type: DataTypes.string; value: string; label?: string; description?: string }
+  | {
+      type: DataTypes.string;
+      value: string;
+      label?: string;
+      description?: string;
+      required?: boolean;
+    }
   | {
       type: DataTypes.number;
       value: number | null;
@@ -9,13 +15,15 @@ export type CellProp =
       max?: number;
       step?: number;
       label?: string;
+      required?: boolean;
     }
-  | { type: DataTypes.boolean; value: boolean; label?: string }
+  | { type: DataTypes.boolean; value: boolean; label?: string; required?: boolean }
   | {
       type: DataTypes.enum;
       value: string;
       options: string[];
       label?: string;
+      required?: boolean;
     }
   | {
       type: DataTypes.file;
@@ -28,6 +36,7 @@ export type CellProp =
         thumbnailUrl?: string;
       };
       label?: string;
+      required?: boolean;
     };
 
 export interface CellDataDto {

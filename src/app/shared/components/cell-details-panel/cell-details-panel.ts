@@ -9,10 +9,12 @@ import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { JointService } from '../../../core/services/jointService';
 import { CellDataDto, CellProp } from '../../../core/dtos/cell-data.dto';
-import { Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, Subscription } from 'rxjs';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { KeyValuePipe } from '@angular/common';
 import { DataTypes } from '../../../core/enums/DataTypes';
+import { Validators } from '@angular/forms';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-cell-details-panel',
@@ -32,27 +34,32 @@ import { DataTypes } from '../../../core/enums/DataTypes';
     MatSlideToggle,
   ],
   templateUrl: './cell-details-panel.html',
-  styleUrl: './cell-details-panel.css',
+  styleUrl: './cell-details-panel.scss',
 })
 export class CellDetailsPanel implements OnInit, OnDestroy {
   private readonly jointService = inject(JointService);
   private readonly formBuilder = inject(FormBuilder);
+  private readonly _snackBar = inject(MatSnackBar);
 
-  protected form!: FormGroup;
+  protected _form!: FormGroup;
+  protected get form(): FormGroup {
+    if (!this._form) throw new Error('Form is undefined');
+    return this._form;
+  }
   protected dto = signal<CellDataDto | null>(null);
-  private sub = new Subscription();
+  private subscription = new Subscription();
 
   public ngOnInit() {
-    this.sub.add(
+    this.subscription.add(
       this.jointService.currentCellPanelInfo$.subscribe((d) => {
         this.dto.set(d);
-        console.log(this.dto());
+        if (!this.dto()) return;
         this.buildForm();
       }),
     );
   }
   public ngOnDestroy() {
-    this.sub.unsubscribe();
+    this.subscription.unsubscribe();
   }
 
   private buildForm() {
@@ -66,27 +73,48 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     for (const [key, prop] of Object.entries(d.props ?? {})) {
       group[key] = this.makeControlForProp(prop);
     }
-    this.form = this.formBuilder.group(group);
-    /*   // keep JointJS in sync (debounced)
-    this.sub.add(
-      this.form.valueChanges
-        .pipe(debounceTime(150), distinctUntilChanged())
-        .subscribe(v => this.pushFormToModel(v))
-    );*/
+    this._form = this.formBuilder.group(group);
+    this.subscription.add(
+      this.form.valueChanges.pipe(debounceTime(700), distinctUntilChanged()).subscribe((v) => {
+        {
+          if (this.isFormValid()) {
+            console.log(v);
+          }
+        }
+      }),
+    );
   }
 
   private makeControlForProp(prop: CellProp): FormControl {
+    const validators = [];
+
+    if (prop.required) validators.push(Validators.required);
+    validators.push(Validators.maxLength(255));
+
     switch (prop.type) {
       case DataTypes.string:
-        return this.formBuilder.nonNullable.control(prop.value);
+        return this.formBuilder.nonNullable.control(prop.value ?? '', {
+          validators: [...validators],
+        });
+
       case DataTypes.number:
-        return this.formBuilder.nonNullable.control(prop.value);
+        if (prop.min) validators.push(Validators.min(prop.min));
+        if (prop.max) validators.push(Validators.max(prop.max));
+
+        return this.formBuilder.nonNullable.control(prop.value ?? null, {
+          validators: [...validators, Validators.pattern(/^-?\d+(\.\d+)?$/)],
+        });
+
       case DataTypes.boolean:
         return this.formBuilder.control(prop.value);
+
       case DataTypes.enum:
-        return this.formBuilder.control(prop.value);
+        return this.formBuilder.control(prop.value ?? null, {
+          validators: [...validators],
+        });
+
       default:
-        throw new Error('Unsupported type "' + prop.type);
+        throw new Error('Unsupported type "' + prop.type + '"');
     }
   }
 
@@ -94,5 +122,48 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     if (Array.isArray(cellProp)) {
       return cellProp;
     } else throw new Error('Unsupported type "' + cellProp);
+  }
+
+  private isFormValid(): boolean {
+    const messages: string[] = [];
+    const props = this.dto()?.props ?? {};
+
+    Object.entries(this.form.controls).forEach(([key, ctrl]) => {
+      const label = props[key]?.label || key;
+
+      if (ctrl.errors) {
+        if (ctrl.errors['pattern']) {
+          messages.push(`${label} has invalid format`);
+        }
+        if (ctrl.errors['required']) {
+          messages.push(`${label} is required`);
+        }
+        if (ctrl.errors['maxlength']) {
+          messages.push(`${label} is too long (max ${ctrl.errors['maxlength'].requiredLength})`);
+        }
+        if (ctrl.errors['min']) {
+          messages.push(`${label} must be ≥ ${ctrl.errors['min'].min}`);
+        }
+        if (ctrl.errors['max']) {
+          messages.push(`${label} must be ≤ ${ctrl.errors['max'].max}`);
+        }
+        if (ctrl.errors['invalidOption']) {
+          messages.push(`${label} must be a valid option`);
+        }
+      }
+    });
+
+    if (messages.length > 0) {
+      const text = messages
+        .map((m) => `• ${m.trim()}`)
+        .join(' ')
+        .trim();
+      this._snackBar.open(text, 'Dismiss', {
+        duration: 10000,
+        panelClass: ['warning-snackbar'],
+      });
+      return false;
+    }
+    return true;
   }
 }
