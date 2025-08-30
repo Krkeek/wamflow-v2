@@ -29,7 +29,7 @@ import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
 import CellView = dia.CellView;
 import html2canvas from 'html2canvas';
-import { CellPanelInfo } from '../dtos/cell-data.dto';
+import { CellDataDto, CellPanelInfo } from '../dtos/cell-data.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -166,23 +166,7 @@ export class JointService implements OnDestroy {
     if (this.selectedCells$.value.length != 0) {
       if (e.key === 'Backspace' || e.key === 'Delete') {
         e.preventDefault();
-        this._dialogService
-          .confirm({
-            title: this.selectedCells$.value.length < 2 ? 'Delete cell' : 'Delete cells',
-            message:
-              this.selectedCells$.value.length < 2
-                ? 'Are you sure you want to delete this cell? This action cannot be undone.'
-                : 'Are you sure you want to delete these cells? This action cannot be undone.',
-            confirmText: this.selectedCells$.value.length < 2 ? 'Delete' : 'Delete All',
-            cancelText: 'Cancel',
-            confirmColor: 'danger',
-          })
-          .subscribe((ok) => {
-            if (ok) {
-              this.removeCells(this.selectedCells$.value);
-              this.removeMultiSelectionBox();
-            }
-          });
+        this.removeCells(this.selectedCells$.value);
       }
     }
 
@@ -465,8 +449,10 @@ export class JointService implements OnDestroy {
 
     if (idx === cells.length - 1) {
       cellToToggle.toBack();
+      this._snackBar.open('Element sent to back', 'Dismiss', { duration: 2500 });
     } else {
       cellToToggle.toFront();
+      this._snackBar.open('Element sent to front', 'Dismiss', { duration: 2500 });
     }
   };
 
@@ -519,20 +505,71 @@ export class JointService implements OnDestroy {
   }
 
   public removeCells = (idsToRemove: ID[]) => {
-    this._historyService.snapshot(this.graph);
-    const cellsToRemove = this.graph.getCells().filter((cell) => idsToRemove.includes(cell.id));
-    this.graph.removeCells(cellsToRemove);
+    this._dialogService
+      .confirm({
+        title: this.selectedCells$.value.length < 2 ? 'Delete cell' : 'Delete cells',
+        message:
+          this.selectedCells$.value.length < 2
+            ? 'Are you sure you want to delete this cell? This action cannot be undone.'
+            : 'Are you sure you want to delete these cells? This action cannot be undone.',
+        confirmText: this.selectedCells$.value.length < 2 ? 'Delete' : 'Delete All',
+        cancelText: 'Cancel',
+        confirmColor: 'danger',
+      })
+      .subscribe((ok) => {
+        if (ok) {
+          this._historyService.snapshot(this.graph);
+          const cellsToRemove = this.graph
+            .getCells()
+            .filter((cell) => idsToRemove.includes(cell.id));
+          this.graph.removeCells(cellsToRemove);
 
-    let deleteMessage = 'Element Deleted';
-    if (cellsToRemove.length > 1) deleteMessage = 'Elements Deleted';
-    this._snackBar.open(deleteMessage, 'Dismiss', { duration: 3000 });
+          let deleteMessage = 'Element Deleted';
+          if (cellsToRemove.length > 1) deleteMessage = 'Elements Deleted';
+          this._snackBar.open(deleteMessage, 'Dismiss', { duration: 3000 });
+
+          this.removeMultiSelectionBox();
+        }
+      });
   };
 
-  public removeCellById = (idToRemove: ID) => {
-    this._historyService.snapshot(this.graph);
-    const cellsToRemove = this.graph.getCell(idToRemove);
-    this.graph.removeCells([cellsToRemove]);
+  public resetCellsData = (idsToReset: ID[]) => {
+    this._dialogService
+      .confirm({
+        title: 'Reset all data',
+        message:
+          this.selectedCells$.value.length < 2
+            ? 'Are you sure you want to reset all properties for this cell? This action cannot be undone.'
+            : 'Are you sure you want to reset all properties for these cells? This action cannot be undone.',
+        confirmText: 'Reset All',
+        cancelText: 'Cancel',
+        confirmColor: 'danger',
+      })
+      .subscribe((ok) => {
+        if (ok) {
+          this._historyService.snapshot(this.graph);
+          const cellsToReset = this.graph.getCells().filter((cell) => idsToReset.includes(cell.id));
+
+          cellsToReset.forEach((cell) => {
+            const dto = cell.prop('attrs/data') as CellDataDto | undefined;
+            if (!dto) return;
+
+            dto.name = '';
+            dto.uri = '';
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            Object.entries(dto.props).forEach(([_key, prop]) => {
+              prop.value = null;
+            });
+            cell.prop('attrs/data', dto);
+            this.updateCellPanelInfo();
+          });
+
+          this._snackBar.open('All data is reset', 'Dismiss', { duration: 3000 });
+        }
+      });
   };
+
   public checkForCustomDimensions(element: WamElements) {
     return element === WamElements.SecurityRealm ? { width: 500, height: 300 } : undefined;
   }
@@ -598,19 +635,7 @@ export class JointService implements OnDestroy {
         evt.preventDefault();
         evt.stopPropagation();
 
-        this._dialogService
-          .confirm({
-            title: 'Delete cell',
-            message: 'Are you sure you want to delete this cell? This action cannot be undone.',
-            confirmText: 'Delete',
-            cancelText: 'Cancel',
-            confirmColor: 'danger',
-          })
-          .subscribe((ok) => {
-            if (ok) {
-              this.removeCellById(view.model.id);
-            }
-          });
+        this.removeCells([view.model.id]);
       },
     });
 
@@ -1045,20 +1070,7 @@ export class JointService implements OnDestroy {
       this._multiBoxDeleteButton.addEventListener('touchstart', consume, { passive: false });
 
       this._multiBoxDeleteButton.addEventListener('click', () => {
-        this._dialogService
-          .confirm({
-            title: 'Delete cells',
-            message: 'Are you sure you want to delete these cells? This action cannot be undone.',
-            confirmText: 'Delete All',
-            cancelText: 'Cancel',
-            confirmColor: 'danger',
-          })
-          .subscribe((ok) => {
-            if (ok) {
-              this.removeCells(this.selectedCells$.value);
-              this.removeMultiSelectionBox();
-            }
-          });
+        this.removeCells(this.selectedCells$.value);
       });
 
       this._multiBoxDeleteButton.appendChild(circle);
