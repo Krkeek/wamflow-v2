@@ -1,7 +1,7 @@
 import { Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
-import { MatCheckbox } from '@angular/material/checkbox';
+import { MatCheckbox, MatCheckboxChange } from '@angular/material/checkbox';
 import { JointService } from '../../../core/services/jointService';
 import { FormsModule } from '@angular/forms';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -12,6 +12,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { NavControlService } from '../../../core/services/navControlService';
 import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-toggle';
 import { WamLinks } from '../../../core/enums/WamLinks';
+import { LabelModes } from '../../../core/enums/LabelModes';
 
 @Component({
   selector: 'app-sheet-header',
@@ -37,7 +38,7 @@ export class SheetHeader implements OnInit {
   @ViewChild('fileInput', { static: false })
   fileInput!: ElementRef<HTMLInputElement>;
 
-  private readonly jointService = inject(JointService);
+  protected readonly jointService = inject(JointService);
   protected readonly navControlService = inject(NavControlService);
   private _snackBar = inject(MatSnackBar);
   protected panelState = { left: false, right: false };
@@ -145,4 +146,14 @@ export class SheetHeader implements OnInit {
 
     return { width: safeWidth, height: safeHeight };
   };
+
+  protected toggleLabels(event: MatCheckboxChange, label: LabelModes) {
+    if (event.checked) {
+      this.jointService.cellLabelMode.next(label);
+    } else {
+      this.jointService.cellLabelMode.next(LabelModes.none);
+    }
+  }
+
+  protected readonly LabelModes = LabelModes;
 }

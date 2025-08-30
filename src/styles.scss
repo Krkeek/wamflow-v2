@@ -74,5 +74,8 @@ $my-theme: mat.m2-define-light-theme((
   }
 }
 
+.settings-btn:hover {
+  fill: var(--ancient--color)
+}
 
 

@@ -81,15 +81,23 @@
 </mat-menu>
 <mat-menu #showMenu="matMenu" (click)="$event.stopPropagation()">
   <button mat-menu-item (click)="$event.stopPropagation()">
-    <mat-checkbox [disabled]="uris.checked" #names (click)="$event.stopPropagation()"
-      >Names</mat-checkbox
+    <mat-checkbox
+      [checked]="this.jointService.cellLabelMode.value === LabelModes.name"
+      (change)="toggleLabels($event, LabelModes.name)"
     >
+      Names
+    </mat-checkbox>
   </button>
+
   <button mat-menu-item (click)="$event.stopPropagation()">
-    <mat-checkbox [disabled]="names.checked" #uris (click)="$event.stopPropagation()"
-      >URIs</mat-checkbox
+    <mat-checkbox
+      [checked]="this.jointService.cellLabelMode.value === LabelModes.uri"
+      (change)="toggleLabels($event, LabelModes.uri)"
     >
+      URIs
+    </mat-checkbox>
   </button>
+
   <button mat-menu-item (click)="$event.stopPropagation()">
     <mat-checkbox (click)="$event.stopPropagation()">Links Names</mat-checkbox>
   </button>
