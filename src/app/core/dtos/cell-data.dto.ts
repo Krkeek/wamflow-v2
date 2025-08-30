@@ -1,4 +1,6 @@
 import { DataTypes } from '../enums/DataTypes';
+import { dia } from '@joint/core';
+import ID = dia.Cell.ID;
 
 export type CellProp =
   | {
@@ -44,4 +46,9 @@ export interface CellDataDto {
   type: string;
   uri: string;
   props: Record<string, CellProp>;
+}
+
+export interface CellPanelInfo {
+  id: ID;
+  data: CellDataDto;
 }

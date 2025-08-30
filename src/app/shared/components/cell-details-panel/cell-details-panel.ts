@@ -8,7 +8,7 @@ import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { JointService } from '../../../core/services/jointService';
-import { CellDataDto, CellProp } from '../../../core/dtos/cell-data.dto';
+import { CellPanelInfo, CellProp } from '../../../core/dtos/cell-data.dto';
 import { debounceTime, distinctUntilChanged, Subscription } from 'rxjs';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { KeyValuePipe } from '@angular/common';
@@ -46,7 +46,7 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     if (!this._form) throw new Error('Form is undefined');
     return this._form;
   }
-  protected dto = signal<CellDataDto | null>(null);
+  protected dto = signal<CellPanelInfo | null>(null);
   private subscription = new Subscription();
 
   public ngOnInit() {
@@ -61,16 +61,15 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
   public ngOnDestroy() {
     this.subscription.unsubscribe();
   }
-
   private buildForm() {
     const d = this.dto();
     if (!d) return;
     const group: Record<string, FormControl> = {
-      name: this.formBuilder.control(d.name ?? '', []),
-      uri: this.formBuilder.control(d.uri ?? '', []),
+      name: this.formBuilder.control(d.data.name ?? '', []),
+      uri: this.formBuilder.control(d.data.uri ?? '', []),
     };
 
-    for (const [key, prop] of Object.entries(d.props ?? {})) {
+    for (const [key, prop] of Object.entries(d.data.props ?? {})) {
       group[key] = this.makeControlForProp(prop);
     }
     this._form = this.formBuilder.group(group);
@@ -124,9 +123,16 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     } else throw new Error('Unsupported type "' + cellProp);
   }
 
+  protected toggleCellLayer = () => {
+    const dto = this.dto();
+    if (dto) {
+      this.jointService.toggleCellLayer(dto.id);
+    }
+  };
+
   private isFormValid(): boolean {
     const messages: string[] = [];
-    const props = this.dto()?.props ?? {};
+    const props = this.dto()?.data.props ?? {};
 
     Object.entries(this.form.controls).forEach(([key, ctrl]) => {
       const label = props[key]?.label || key;
