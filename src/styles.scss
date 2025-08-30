@@ -11,8 +11,15 @@
   --defaultBorderRadius: 15px;
   --secondaryColor-two: #E9ECEF;
   --placeHolder-color: rgba(0, 0, 0, 0.5);
-  --danger-color: #d9534f
+  --danger-color: #d9534f;
+  --unfocusIcon-color: black;
+}
 
+.dark-theme {
+  --backgroundDark-color: black;
+  --ancientTwo-color: rgba(73, 80, 87, 0.5);
+  --defaultText-color: white;
+  --unfocusIcon-color: white;
 }
 
 html,body{
@@ -28,14 +35,12 @@ html,body{
   display: none;
 }
 
-/* Chrome, Safari, Edge, Opera */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Firefox */
 input[type=number] {
   -moz-appearance: textfield;
 }
@@ -49,22 +54,32 @@ mat-dialog-container {
   background-color: white !important;
 }
 
-
 /* Palettes */
-$my-primary: mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
-$my-accent:  mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
-$my-warn:    mat.m2-define-palette(mat.$m2-red-palette, 600);
+$primary-light: mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
+$accent-light:  mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
+$warn-light:    mat.m2-define-palette(mat.$m2-red-palette, 600);
 
-/* Theme */
-$my-theme: mat.m2-define-light-theme((
-  color: (
-    primary: $my-primary,
-    accent:  $my-accent,
-    warn:    $my-warn,
-  )
+
+$primary-dark: mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
+$accent-dark: mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
+$warn-dark:  mat.m2-define-palette(mat.$m2-red-palette, 600);
+
+/* themes */
+$light-theme: mat.m2-define-light-theme((
+  color: (primary:$primary-light , accent: $accent-light, warn: $warn-light)
 ));
 
-@include mat.all-component-themes($my-theme);
+$dark-theme: mat.m2-define-dark-theme((
+  color: (primary: $primary-dark, accent: $accent-dark, warn: $warn-dark)
+));
+
+/* apply Material components */
+@include mat.all-component-themes($light-theme);
+
+.dark-theme {
+  @include mat.all-component-colors($dark-theme);
+  background: black;
+}
 
 @media (max-width: 1920px) {
   mat-icon {

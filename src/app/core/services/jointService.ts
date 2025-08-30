@@ -25,11 +25,15 @@ import { LocalStorageService } from './localStorageService';
 import { NavControlService } from './navControlService';
 import { CustomLink } from '../Infrastructure/CustomLink';
 import { WamLinks } from '../enums/WamLinks';
+import html2canvas from 'html2canvas';
+import { CellPanelInfo } from '../dtos/cell-data.dto';
+import { Themes } from '../enums/Themes';
+import { ThemeService } from './themeService';
+import { LocalStorageKeys } from '../enums/LocalStorageKeys';
 import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
 import CellView = dia.CellView;
-import html2canvas from 'html2canvas';
-import { CellPanelInfo } from '../dtos/cell-data.dto';
+import { GraphSave } from '../interfaces/GraphSave';
 
 @Injectable({
   providedIn: 'root',
@@ -49,6 +53,7 @@ export class JointService implements OnDestroy {
   private readonly _localStorageService = inject(LocalStorageService);
   private readonly _navControlService = inject(NavControlService);
   private readonly _cellCreatorService = inject(CellCreatorService);
+  private readonly _themeService = inject(ThemeService);
 
   private _graph?: dia.Graph;
   private get graph() {
@@ -135,6 +140,10 @@ export class JointService implements OnDestroy {
         takeUntil(this.destroy$),
       )
       .subscribe();
+
+    this._themeService.activeTheme$.subscribe((theme) => {
+      if (this._paper) this.toggleJointTheme(theme);
+    });
   }
 
   private _toolsView?: ToolsView;
@@ -220,6 +229,7 @@ export class JointService implements OnDestroy {
       height: this.paperDimensions().height,
       gridSize: 10,
       drawGridSize: 30,
+      background: { color: 'white' },
       drawGrid: JOINT_CONSTRAINTS.defaultGrid,
       defaultLink: () => this._cellCreatorService.createLink(this.activeLinkType$.value),
       cellViewNamespace: this.namespace,
@@ -256,10 +266,10 @@ export class JointService implements OnDestroy {
         },
       },
     });
-
     this.unhighlightCells(this.graph.getCells().map((c) => c.id));
     this.initToolTips();
     this.bindPaperEvents();
+    this.toggleJointTheme(this._themeService.activeTheme$.value);
     this.ready.set(true);
   }
 
@@ -553,9 +563,8 @@ export class JointService implements OnDestroy {
     this._graph = new dia.Graph({}, { cellNamespace: this.namespace });
     await this.tryLoadingLocalStorageGraph();
   }
-
   private tryLoadingLocalStorageGraph = async () => {
-    const saved = await this._localStorageService.load();
+    const saved = (await this._localStorageService.load(LocalStorageKeys.JointGraph)) as GraphSave;
     if (saved?.data) {
       try {
         this.graph.fromJSON(saved.data);
@@ -590,6 +599,17 @@ export class JointService implements OnDestroy {
       enabled ? JOINT_CONSTRAINTS.edgeHighlightColor : 'transparent',
     );
     view.model.attr(['edge', 'cursor'], enabled ? 'crosshair' : 'move');
+  }
+
+  public toggleJointTheme(theme: Themes): void {
+    if (theme === Themes.Dark) {
+      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGridDark);
+      this.paper.drawBackground(JOINT_CONSTRAINTS.paperBackgroundDark);
+    }
+    if (theme === Themes.Light) {
+      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGrid);
+      this.paper.drawBackground(JOINT_CONSTRAINTS.paperBackground);
+    }
   }
 
   private initToolTips(): void {
@@ -725,8 +745,8 @@ export class JointService implements OnDestroy {
 
   private persist() {
     const data = this.graph.toJSON();
-    const payload = { version: 1, ts: Date.now(), data };
-    return this._localStorageService.save(payload);
+    const payload: GraphSave = { version: 1, ts: Date.now(), data };
+    return this._localStorageService.save<GraphSave>(LocalStorageKeys.JointGraph, payload);
   }
 
   private onElementPointerDown = (

@@ -11,15 +11,17 @@
 .sideNavContainer{
   height: 98vh;
   width: 99vw;
+  background-color: var(--backgroundDark-color) !important;
 }
 
 .left-side-nav {
   width: 10%;
-
+  background-color: var(--backgroundDark-color) !important;
 }
 
 .right-side-nav {
   width: 20%;
+  background-color: var(--backgroundDark-color) !important;
 }
 
 .left-side-nav,
@@ -38,6 +40,8 @@
   height: 96%;
   overflow: scroll;
   border-radius: var(--defaultBorderRadius);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 
 }
 
