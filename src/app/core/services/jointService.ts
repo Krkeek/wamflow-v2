@@ -29,7 +29,7 @@ import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
 import CellView = dia.CellView;
 import html2canvas from 'html2canvas';
-import { CellPanelInfo } from '../dtos/cell-data.dto';
+import { CellDataDto, CellPanelInfo } from '../dtos/cell-data.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -529,6 +529,43 @@ export class JointService implements OnDestroy {
           this._snackBar.open(deleteMessage, 'Dismiss', { duration: 3000 });
 
           this.removeMultiSelectionBox();
+        }
+      });
+  };
+
+  public resetCellsData = (idsToReset: ID[]) => {
+    this._dialogService
+      .confirm({
+        title: 'Reset all data',
+        message:
+          this.selectedCells$.value.length < 2
+            ? 'Are you sure you want to reset all properties for this cell? This action cannot be undone.'
+            : 'Are you sure you want to reset all properties for these cells? This action cannot be undone.',
+        confirmText: 'Reset All',
+        cancelText: 'Cancel',
+        confirmColor: 'danger',
+      })
+      .subscribe((ok) => {
+        if (ok) {
+          this._historyService.snapshot(this.graph);
+          const cellsToReset = this.graph.getCells().filter((cell) => idsToReset.includes(cell.id));
+
+          cellsToReset.forEach((cell) => {
+            const dto = cell.prop('attrs/data') as CellDataDto | undefined;
+            if (!dto) return;
+
+            dto.name = '';
+            dto.uri = '';
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            Object.entries(dto.props).forEach(([_key, prop]) => {
+              prop.value = null;
+            });
+            cell.prop('attrs/data', dto);
+            this.updateCellPanelInfo();
+          });
+
+          this._snackBar.open('All data is reset', 'Dismiss', { duration: 3000 });
         }
       });
   };

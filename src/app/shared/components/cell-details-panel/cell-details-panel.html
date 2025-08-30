@@ -76,11 +76,11 @@
     <mat-icon>content_copy</mat-icon>
     Copy
   </button>
-  <button (click)="deleteElement()" mat-menu-item>
+  <button (click)="deleteCell()" mat-menu-item>
     <mat-icon> delete</mat-icon>
     Delete
   </button>
-  <button mat-menu-item>
+  <button [disabled]="isFormEmpty()" (click)="resetCellData()" mat-menu-item>
     <mat-icon> repeat</mat-icon>
     Reset
   </button>

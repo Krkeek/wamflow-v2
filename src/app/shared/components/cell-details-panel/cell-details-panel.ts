@@ -134,8 +134,12 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     this.jointService.toggleCellLayer(this.dto.id);
   };
 
-  protected deleteElement = () => {
+  protected deleteCell = () => {
     this.jointService.removeCells([this.dto.id]);
+  };
+
+  protected resetCellData = (): void => {
+    this.jointService.resetCellsData([this.dto.id]);
   };
 
   private isFormValid(): boolean {
@@ -179,5 +183,11 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
       return false;
     }
     return true;
+  }
+
+  protected isFormEmpty(): boolean {
+    if (!this._form) return true;
+    const values = this._form.getRawValue();
+    return Object.values(values).every((v) => v === null || v === '' || v === false);
   }
 }
