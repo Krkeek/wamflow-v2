@@ -25,17 +25,19 @@ import { LocalStorageService } from './localStorageService';
 import { NavControlService } from './navControlService';
 import { CustomLink } from '../Infrastructure/CustomLink';
 import { WamLinks } from '../enums/WamLinks';
+import html2canvas from 'html2canvas';
+import { CellPanelInfo } from '../dtos/cell-data.dto';
+import { LabelModes } from '../enums/LabelModes';
 import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
 import CellView = dia.CellView;
-import html2canvas from 'html2canvas';
-import { CellPanelInfo } from '../dtos/cell-data.dto';
 
 @Injectable({
   providedIn: 'root',
 })
 export class JointService implements OnDestroy {
   public selectedCells$ = new BehaviorSubject<ID[]>([]);
+  public cellLabelMode = new BehaviorSubject<LabelModes>(LabelModes.none);
   public readonly ready = signal(false);
   public readonly title = signal('');
   public readonly paperDimensions = signal<{ width: number; height: number }>({
@@ -135,6 +137,10 @@ export class JointService implements OnDestroy {
         takeUntil(this.destroy$),
       )
       .subscribe();
+
+    this.cellLabelMode.subscribe((labelMode) => {
+      this.toggleCellLabels(labelMode);
+    });
   }
 
   private _toolsView?: ToolsView;
@@ -312,6 +318,21 @@ export class JointService implements OnDestroy {
     }
   }
 
+  public toggleCellLabels = (label: LabelModes, ids?: ID[]) => {
+    const cells = !ids
+      ? this.graph.getCells()
+      : this.graph.getCells().filter((cell) => ids.includes(cell.id));
+
+    cells.forEach((cell) => {
+      if (label === LabelModes.none) {
+        cell.prop('attrs/labelOne/text', '');
+      } else {
+        const labelToShow = cell.prop('attrs/data/' + label);
+        cell.prop('attrs/labelOne/text', labelToShow);
+      }
+    });
+  };
+
   public addCell(cell: WamElements, specificGraph?: dia.Graph, specificPaper?: dia.Paper): void {
     const newCell = this._elementCreatorService.createElement(cell);
 
@@ -355,6 +376,7 @@ export class JointService implements OnDestroy {
     this.selectSingle(el.id);
     const cellView = el.findView(this.paper);
     this.showToolView(cellView);
+    this.toggleCellLabels(this.cellLabelMode.value, [el.id]);
   }
 
   public highlightCells(cellIds: ID[]): void {

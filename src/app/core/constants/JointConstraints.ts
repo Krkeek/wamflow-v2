@@ -19,4 +19,5 @@ export const JOINT_CONSTRAINTS = {
   multiBoxSelectorColor: 'black',
   multiBoxSelectorThickness: '0.5',
   edgeHighlightColor: 'rgba(2,62,138,0.25)',
+  toolTipSettingColor: 'rgba(30,136,229,0.5)',
 };
