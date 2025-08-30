@@ -37,6 +37,8 @@ mat-slide-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--unfocusIcon-color);
+  background: none;
 }
 
 .right-side {
@@ -56,4 +58,8 @@ mat-slide-toggle {
 
 .content-div::-webkit-scrollbar {
   display: none;
+}
+
+.no-selected {
+  color: var(--unfocusIcon-color);
 }

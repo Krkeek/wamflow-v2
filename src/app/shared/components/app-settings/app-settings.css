@@ -1,0 +1,19 @@
+h2 {
+  margin: 0;
+  padding-bottom: 1.5rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+}
+
+mat-icon {
+  font-size: 30px !important;
+  width: 30px !important;
+  height: 30px !important;
+  margin-right: 0.5rem;
+}
+.settings-app {
+  padding: 2rem 0;
+}
