@@ -1,9 +1,10 @@
 import { CellDataDto } from '../dtos/cell-data.dto';
 import { DataTypes } from '../enums/DataTypes';
+import { WamElements } from '../enums/WamElements';
 
 export const dummyApplication: CellDataDto = {
   name: 'Library',
-  type: 'Application',
+  type: WamElements.Application,
   uri: 'https://your.app/diagram/123#cell-app',
   props: {
     theme: { label: 'Theme', type: DataTypes.string, value: 'Dark', required: true },
@@ -29,7 +30,7 @@ export const dummyApplication: CellDataDto = {
 
 export const dummyService: CellDataDto = {
   name: 'AuthService',
-  type: 'Service',
+  type: WamElements.Service,
   uri: 'https://your.app/diagram/123#cell-srv',
   props: {
     endpoint: { label: 'Endpoint', type: DataTypes.string, value: 'https://api.app.com/auth' },
@@ -50,7 +51,7 @@ export const dummyService: CellDataDto = {
 
 export const dummyProcessUnit: CellDataDto = {
   name: 'ETL Processor',
-  type: 'ProcessUnit',
+  type: WamElements.ProcessUnit,
   uri: 'https://your.app/diagram/123#cell-proc',
   props: {
     threads: { label: 'Threads', type: DataTypes.number, value: 4 },
@@ -86,7 +87,7 @@ export const dummyProcessUnit: CellDataDto = {
 
 export const dummySecurityRealm: CellDataDto = {
   name: 'AdminRealm',
-  type: 'SecurityRealm',
+  type: WamElements.SecurityRealm,
   uri: 'https://your.app/diagram/123#cell-sec',
   props: {
     realmId: { label: 'Realm ID', type: DataTypes.string, value: 'admin' },
@@ -117,7 +118,7 @@ export const dummySecurityRealm: CellDataDto = {
 
 export const dummyIdentityProvider: CellDataDto = {
   name: 'GoogleIDP',
-  type: 'IdentityProvider',
+  type: WamElements.IdentityProvider,
   uri: 'https://your.app/diagram/123#cell-idp',
   props: {
     providerName: { label: 'Provider Name', type: DataTypes.string, value: 'Google' },

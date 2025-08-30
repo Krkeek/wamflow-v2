@@ -29,7 +29,7 @@ import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
 import CellView = dia.CellView;
 import html2canvas from 'html2canvas';
-import { CellDataDto } from '../dtos/cell-data.dto';
+import { CellPanelInfo } from '../dtos/cell-data.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -66,7 +66,7 @@ export class JointService implements OnDestroy {
   private destroy$ = new Subject<void>();
 
   public activeLinkType$ = new BehaviorSubject(WamLinks.Invocation);
-  public currentCellPanelInfo$ = new BehaviorSubject<CellDataDto | null>(null);
+  public currentCellPanelInfo$ = new BehaviorSubject<CellPanelInfo | null>(null);
 
   private _groupDragActive = false;
   private _groupDragStart: { x: number; y: number } | null = null;
@@ -228,7 +228,7 @@ export class JointService implements OnDestroy {
       restrictTranslate: true,
       embeddingMode: true,
       validateConnection: (s, _m, t) => s !== t,
-
+      validateEmbedding: (_childView, parentView) => this.isSecurityRealm(parentView.model),
       highlighting: {
         default: {
           name: 'stroke',
@@ -306,7 +306,7 @@ export class JointService implements OnDestroy {
     const ids = this.selectedCells$.value;
     if (ids.length === 1) {
       const cell = this.getCellById(ids[0]);
-      this.currentCellPanelInfo$.next(cell.prop('attrs/data'));
+      this.currentCellPanelInfo$.next({ id: ids[0], data: cell.prop('attrs/data') });
     } else {
       this.currentCellPanelInfo$.next(null);
     }
@@ -350,6 +350,8 @@ export class JointService implements OnDestroy {
     if (dimensions) el.resize(dimensions.width, dimensions.height);
     el.position(x - width / 2, y - height / 2);
     el.addTo(this.graph);
+    el.toFront();
+    this.tryEmbedIntoSecurityRealm(el);
     this.selectSingle(el.id);
     const cellView = el.findView(this.paper);
     this.showToolView(cellView);
@@ -454,6 +456,18 @@ export class JointService implements OnDestroy {
     });
     this.exportPNGPrepare('after');
     this._snackBar.open('Diagram exported as PNG', 'Dismiss', { duration: 2500 });
+  };
+
+  public toggleCellLayer = (cellId: ID) => {
+    const cellToToggle = this.graph.getCell(cellId);
+    const cells = this.graph.getCells();
+    const idx = cells.indexOf(cellToToggle);
+
+    if (idx === cells.length - 1) {
+      cellToToggle.toBack();
+    } else {
+      cellToToggle.toFront();
+    }
   };
 
   private exportPNGPrepare = (stage: 'before' | 'after') => {
@@ -747,8 +761,9 @@ export class JointService implements OnDestroy {
     this.showToolView(elementView);
   };
 
-  private onElementPointerUp = () => {
+  private onElementPointerUp = (elementView: dia.ElementView) => {
     this.resetGroupDragConstraints();
+    this.tryEmbedMultiElementsIntoSecurityRealm(elementView);
   };
 
   private onElementMouseEnter = (elementView: dia.ElementView) => {
@@ -837,6 +852,54 @@ export class JointService implements OnDestroy {
       this._origin = undefined;
     }
   };
+  private tryEmbedIntoSecurityRealm(child: dia.Element) {
+    const center = child.getBBox().center();
+    const viewsAtPoint = this.paper.findElementViewsAtPoint(center);
+
+    const parents = viewsAtPoint
+      .map((v) => v.model)
+      .filter(
+        (m): m is dia.Element => m.isElement() && m.id !== child.id && this.isSecurityRealm(m),
+      );
+
+    const parent = parents.at(-1);
+    if (parent) {
+      parent.embed(child);
+      parent.toBack();
+    }
+  }
+
+  private tryEmbedMultiElementsIntoSecurityRealm(elementView: dia.ElementView) {
+    const dragged = elementView.model as dia.Element;
+    const parent = dragged.getParentCell() as dia.Element | null;
+
+    if (!parent || !this.isSecurityRealm(parent)) return;
+
+    const selectedIds: ID[] = this.selectedCells$.value ?? [];
+    const selectedEls = selectedIds
+      .map((id) => this.graph.getCell(id))
+      .filter((c): c is dia.Element => !!c && c.isElement());
+
+    const parentBB = parent.getBBox();
+
+    selectedEls.forEach((el) => {
+      if (el.id === dragged.id) return;
+      const elBB = el.getBBox();
+
+      if (parentBB.containsRect(elBB)) {
+        parent.embed(el);
+      } else {
+        if (el.getParentCell() && el.getParentCell()!.id === parent.id) {
+          parent.unembed(el);
+        }
+      }
+    });
+    parent.toBack();
+    this.removeMultiSelectionBox();
+  }
+
+  private isSecurityRealm = (m: dia.Element) => m.attr('data/type') === WamElements.SecurityRealm;
+
   private adjustRubberNodeOnMove = (x: number, y: number) => {
     if (!this._origin || !this._rubberNode) return;
     const x0 = Math.min(this._origin.x, x);

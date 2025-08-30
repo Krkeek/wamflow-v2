@@ -1,14 +1,14 @@
 @if (dto()) {
-  @let d = dto();
+  @let d = dto()?.data;
   <div class="header">
     <div>
-      {{ dto()?.type || 'Multi Selected' }}
+      {{ dto()?.data?.type || 'Multi Selected' }}
     </div>
     <div class="right-side">
       <button class="actions-button" matTooltip="Enable AI">
         <span class="material-symbols-outlined">network_intelligence</span>
       </button>
-      <button class="actions-button" matTooltip="Reorder Layer">
+      <button (click)="toggleCellLayer()" class="actions-button" matTooltip="Reorder Layer">
         <mat-icon>layers</mat-icon>
       </button>
       <button [matMenuTriggerFor]="more" class="actions-button" matTooltip="Menu">
