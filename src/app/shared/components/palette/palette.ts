@@ -16,7 +16,7 @@ import { PaletteItem } from './palette-item/palette-item';
 export class Palette implements OnInit {
   protected elements: WamElements[] = [];
 
-  ngOnInit() {
+  public ngOnInit() {
     this.elements = Object.values(WamElements) as WamElements[];
   }
 }

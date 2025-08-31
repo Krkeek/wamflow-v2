@@ -26,7 +26,7 @@ export class ConfirmationDialog {
   private readonly ref = inject(MatDialogRef<ConfirmationDialog, boolean>);
 
   @HostListener('window:keydown', ['$event'])
-  onDocKeydown(e: KeyboardEvent) {
+  protected onDocKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter') {
       e.preventDefault();
       this.ref.close(true);
@@ -36,7 +36,7 @@ export class ConfirmationDialog {
       this.ref.close(false);
     }
   }
-  close(result: boolean) {
+  protected close(result: boolean) {
     this.ref.close(result);
   }
 }

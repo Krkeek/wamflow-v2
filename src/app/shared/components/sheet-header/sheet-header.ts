@@ -45,7 +45,7 @@ import { NavControlService } from '../../../core/services/navControlService';
 })
 export class SheetHeader implements OnInit, OnDestroy {
   @ViewChild('fileInput', { static: false })
-  fileInput!: ElementRef<HTMLInputElement>;
+  protected fileInput!: ElementRef<HTMLInputElement>;
   protected _form!: FormGroup;
   protected panelState = { left: false, right: false };
 
@@ -77,11 +77,11 @@ export class SheetHeader implements OnInit, OnDestroy {
     this.activeLinkType = val;
   }
 
-  ngOnInit() {
+  public ngOnInit() {
     this.navControlService.state$.subscribe((state) => (this.panelState = state));
     this.buildForm();
   }
-  ngOnDestroy(): void {
+  public ngOnDestroy(): void {
     this.subscriptions?.forEach((s) => s.unsubscribe());
   }
   protected setActiveLinkType = (link: WamLinks) => this.jointService.activeLinkType$.next(link);

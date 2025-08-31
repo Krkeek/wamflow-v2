@@ -12,7 +12,7 @@ export class ThemeService {
   public readonly activeTheme$ = new BehaviorSubject<Themes>(Themes.Light);
   private readonly localStorageService = inject(LocalStorageService);
 
-  setTheme(theme: Themes) {
+  public setTheme(theme: Themes) {
     this.activeTheme$.next(theme);
     this.persist();
   }

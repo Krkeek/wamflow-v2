@@ -1,15 +1,15 @@
 @use '@angular/material' as mat;
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-:root{
-  --ancient--color: #1E88E5;
-  --ancientTwo-color: #E9ECEF;
+:root {
+  --ancient--color: #1e88e5;
+  --ancientTwo-color: #e9ecef;
   --defaultText-color: black;
-  --defaultBorder-color: #CDCFD2;
+  --defaultBorder-color: #cdcfd2;
   --defaultTextButton-color: white;
   --textTwo-color: #808080;
   --defaultBorderRadius: 15px;
-  --secondaryColor-two: #E9ECEF;
+  --secondaryColor-two: #e9ecef;
   --placeHolder-color: rgba(0, 0, 0, 0.5);
   --danger-color: #d9534f;
   --unfocusIcon-color: black;
@@ -22,16 +22,16 @@
   --unfocusIcon-color: white;
 }
 
-html,body{
+html,
+body {
   padding: 0;
   margin: 0;
   overflow-x: hidden;
   color: var(--defaultText-color);
   font-family: 'Inter', sans-serif;
-
 }
 
-::-webkit-scrollbar{
+::-webkit-scrollbar {
   display: none;
 }
 
@@ -41,13 +41,18 @@ input::-webkit-inner-spin-button {
   margin: 0;
 }
 
-input[type=number] {
+input[type='number'] {
   -moz-appearance: textfield;
 }
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
-
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+}
 
 mat-dialog-container {
   border-radius: var(--defaultBorderRadius) !important;
@@ -56,22 +61,33 @@ mat-dialog-container {
 
 /* Palettes */
 $primary-light: mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
-$accent-light:  mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
-$warn-light:    mat.m2-define-palette(mat.$m2-red-palette, 600);
-
+$accent-light: mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
+$warn-light: mat.m2-define-palette(mat.$m2-red-palette, 600);
 
 $primary-dark: mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
 $accent-dark: mat.m2-define-palette(mat.$m2-blue-palette, 600, 300, 800);
-$warn-dark:  mat.m2-define-palette(mat.$m2-red-palette, 600);
+$warn-dark: mat.m2-define-palette(mat.$m2-red-palette, 600);
 
 /* themes */
-$light-theme: mat.m2-define-light-theme((
-  color: (primary:$primary-light , accent: $accent-light, warn: $warn-light)
-));
+$light-theme: mat.m2-define-light-theme(
+  (
+    color: (
+      primary: $primary-light,
+      accent: $accent-light,
+      warn: $warn-light,
+    ),
+  )
+);
 
-$dark-theme: mat.m2-define-dark-theme((
-  color: (primary: $primary-dark, accent: $accent-dark, warn: $warn-dark)
-));
+$dark-theme: mat.m2-define-dark-theme(
+  (
+    color: (
+      primary: $primary-dark,
+      accent: $accent-dark,
+      warn: $warn-dark,
+    ),
+  )
+);
 
 /* apply Material components */
 @include mat.all-component-themes($light-theme);
@@ -90,7 +106,5 @@ $dark-theme: mat.m2-define-dark-theme((
 }
 
 .settings-btn:hover {
-  fill: var(--ancient--color)
+  fill: var(--ancient--color);
 }
-
-

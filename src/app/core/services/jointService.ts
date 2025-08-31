@@ -139,7 +139,7 @@ export class JointService implements OnDestroy {
     });
 
     this.cellLabelMode.subscribe((labelMode) => {
-      this.toggleCellLabels(labelMode);
+      if (this._graph) this.toggleCellLabels(labelMode);
     });
   }
 

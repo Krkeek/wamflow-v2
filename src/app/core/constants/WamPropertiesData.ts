@@ -45,7 +45,7 @@ export const dummyService: CellDataDto = {
     enabled: { label: 'Enabled', type: DataTypes.boolean, value: true },
     timeout: { label: 'Timeout (ms)', type: DataTypes.number, value: 5000 },
     version: { label: 'Version', type: DataTypes.string, value: '2.1' },
-    healthCheck: { label: 'Health Check', type: DataTypes.boolean, value: true },
+    healthCheck: { label: 'Health Check', type: DataTypes.boolean, value: false },
   },
 };
 
