@@ -1,8 +1,7 @@
 import { inject, Injectable, OnDestroy, signal } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { dia, elementTools, g, linkTools, shapes } from '@joint/core';
-import { WamElements } from '../enums/WamElements';
-import { CellCreatorService } from './cellCreatorService';
-import { JOINT_CONSTRAINTS } from '../constants/JointConstraints';
+import html2canvas from 'html2canvas';
 import {
   BehaviorSubject,
   catchError,
@@ -14,27 +13,31 @@ import {
   switchMap,
   takeUntil,
 } from 'rxjs';
-import { ResizeControl } from '../Infrastructure/ResizeControl';
-import { DialogService } from './dialogService';
+
 import { ElementSettingsDialog } from '../../shared/components/element-settings-dialog/element-settings-dialog';
+import { JOINT_CONSTRAINTS } from '../constants/JointConstraints';
+import { CellDataDto, CellPanelInfo } from '../dtos/cell-data.dto';
+import { LabelModes } from '../enums/LabelModes';
+import { LocalStorageKeys } from '../enums/LocalStorageKeys';
+import { Themes } from '../enums/Themes';
+import { WamElements } from '../enums/WamElements';
+import { WamLinks } from '../enums/WamLinks';
 import { CustomElement } from '../Infrastructure/CustomElement';
-import { HistoryService } from './historyService';
+import { CustomLink } from '../Infrastructure/CustomLink';
+import { ResizeControl } from '../Infrastructure/ResizeControl';
+import { GraphSave } from '../interfaces/GraphSave';
 import { BaseUtility } from '../utilities/BaseUtility';
-import { MatSnackBar } from '@angular/material/snack-bar';
+
+import { CellCreatorService } from './cellCreatorService';
+import { DialogService } from './dialogService';
+import { HistoryService } from './historyService';
 import { LocalStorageService } from './localStorageService';
 import { NavControlService } from './navControlService';
-import { CustomLink } from '../Infrastructure/CustomLink';
-import { WamLinks } from '../enums/WamLinks';
-import html2canvas from 'html2canvas';
-import { CellDataDto, CellPanelInfo } from '../dtos/cell-data.dto';
-import { Themes } from '../enums/Themes';
 import { ThemeService } from './themeService';
-import { LocalStorageKeys } from '../enums/LocalStorageKeys';
-import { LabelModes } from '../enums/LabelModes';
+
 import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
 import CellView = dia.CellView;
-import { GraphSave } from '../interfaces/GraphSave';
 
 @Injectable({
   providedIn: 'root',
@@ -48,6 +51,10 @@ export class JointService implements OnDestroy {
     width: 4000,
     height: 4000,
   });
+
+  public activeLinkType$ = new BehaviorSubject(WamLinks.Invocation);
+  public currentCellPanelInfo$ = new BehaviorSubject<CellPanelInfo | null>(null);
+
   private readonly _elementCreatorService = inject(CellCreatorService);
   private readonly _dialogService = inject(DialogService);
   private readonly _historyService = inject(HistoryService);
@@ -56,24 +63,12 @@ export class JointService implements OnDestroy {
   private readonly _navControlService = inject(NavControlService);
   private readonly _cellCreatorService = inject(CellCreatorService);
   private readonly _themeService = inject(ThemeService);
-
-  private _graph?: dia.Graph;
-  private get graph() {
-    if (!this._graph) throw 'No graph defined';
-    return this._graph;
-  }
-
+  private _toolsView?: ToolsView;
+  private _toolsViewLinks?: ToolsView;
   private _paper?: dia.Paper;
-  private get paper() {
-    if (!this._paper) throw 'No paper defined';
-    return this._paper;
-  }
-
   private _saveTrigger$ = new Subject<void>();
   private destroy$ = new Subject<void>();
-
-  public activeLinkType$ = new BehaviorSubject(WamLinks.Invocation);
-  public currentCellPanelInfo$ = new BehaviorSubject<CellPanelInfo | null>(null);
+  private _graph?: dia.Graph;
 
   private _groupDragActive = false;
   private _groupDragStart: { x: number; y: number } | null = null;
@@ -98,10 +93,6 @@ export class JointService implements OnDestroy {
   };
 
   private _canvas?: HTMLElement;
-  private get canvas() {
-    if (!this._canvas) throw 'Canvas is undefined';
-    return this._canvas;
-  }
 
   constructor() {
     this.selectedCells$
@@ -152,8 +143,19 @@ export class JointService implements OnDestroy {
     });
   }
 
-  private _toolsView?: ToolsView;
-  private _toolsViewLinks?: ToolsView;
+  private get canvas() {
+    if (!this._canvas) throw 'Canvas is undefined';
+    return this._canvas;
+  }
+  private get graph() {
+    if (!this._graph) throw 'No graph defined';
+    return this._graph;
+  }
+
+  private get paper() {
+    if (!this._paper) throw 'No paper defined';
+    return this._paper;
+  }
 
   private get toolsView(): ToolsView {
     if (!this._toolsView) {
@@ -415,101 +417,6 @@ export class JointService implements OnDestroy {
     });
   }
 
-  public getCellById(cellId: ID) {
-    const cell = this.graph?.getCell(cellId);
-    if (!cell) throw Error(`Unable to get cell ${cellId}`);
-    return cell;
-  }
-
-  public duplicateCell(cellId: ID): void {
-    const cell = this.graph.getCell(cellId);
-    if (!cell || !cell.isElement()) return;
-
-    const newCell = cell.clone();
-
-    const { x, y } = (cell as dia.Element).position();
-    const { width } = (cell as dia.Element).size();
-
-    const offset = 20;
-    (newCell as dia.Element).position(x + width + offset, y);
-
-    newCell.addTo(this.graph);
-    this.selectSingle(newCell.id);
-  }
-
-  public importJSON = async (file: File) => {
-    const JSONObject = await BaseUtility.parseJsonFile(file);
-    this.graph.fromJSON(JSONObject);
-    this.parseTitleFromGraph();
-    this._snackBar.open('Diagram imported successfully', 'Dismiss', { duration: 2500 });
-  };
-
-  public exportJSON = async () => {
-    if (this.graph.getCells().length === 0) {
-      this._snackBar.open('The diagram is empty', 'Dismiss', { duration: 3000 });
-      return;
-    }
-    this.parseTitleToGraph();
-    const jsonObject = this.graph.toJSON();
-    await BaseUtility.exportJSONHelper(jsonObject, this.title());
-
-    this._snackBar.open('Diagram exported as JSON', 'Dismiss', { duration: 2500 });
-  };
-
-  public exportPNG = async () => {
-    if (this.graph.getCells().length === 0) {
-      this._snackBar.open('The diagram is empty', 'Dismiss', { duration: 3000 });
-      return;
-    }
-    this.exportPNGPrepare('before');
-    html2canvas(this.canvas).then((canvas) => {
-      const based64image = canvas.toDataURL('image/png');
-      const anchor = document.createElement('a');
-      anchor.setAttribute('href', based64image);
-      anchor.setAttribute('download', this.title());
-      anchor.click();
-      anchor.remove();
-    });
-    this.exportPNGPrepare('after');
-    this._snackBar.open('Diagram exported as PNG', 'Dismiss', { duration: 2500 });
-  };
-
-  public toggleCellLayer = (cellId: ID) => {
-    const cellToToggle = this.graph.getCell(cellId);
-    const cells = this.graph.getCells();
-    const idx = cells.indexOf(cellToToggle);
-
-    if (idx === cells.length - 1) {
-      cellToToggle.toBack();
-      this._snackBar.open('Element sent to back', 'Dismiss', { duration: 2500 });
-    } else {
-      cellToToggle.toFront();
-      this._snackBar.open('Element sent to front', 'Dismiss', { duration: 2500 });
-    }
-  };
-
-  private exportPNGPrepare = (stage: 'before' | 'after') => {
-    if (stage === 'before') {
-      if (this._multiBoxG) this._multiBoxG.style.display = 'none';
-      this.unhighlightCells(this.selectedCells$.value);
-      this.paper.setGrid({ name: 'mesh', args: { color: 'transparent' } });
-      this.paper.fitToContent({
-        allowNewOrigin: 'any',
-        allowNegativeBottomRight: false,
-        padding: 5,
-      });
-    } else {
-      if (this._multiBoxG) this._multiBoxG.style.display = '';
-      this.highlightCells(this.selectedCells$.value);
-      this.paper.setDimensions(
-        JOINT_CONSTRAINTS.paperDefaultDimensions.width,
-        JOINT_CONSTRAINTS.paperDefaultDimensions.height,
-      );
-      this.paper.translate(0, 0);
-      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGrid);
-    }
-  };
-
   public ngOnDestroy(): void {
     this.paper.off('element:pointerdown');
     this.paper.off('element:mouseover');
@@ -589,7 +496,6 @@ export class JointService implements OnDestroy {
             dto.name = '';
             dto.uri = '';
 
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             Object.entries(dto.props).forEach(([_key, prop]) => {
               prop.value = null;
             });
@@ -605,6 +511,113 @@ export class JointService implements OnDestroy {
   public checkForCustomDimensions(element: WamElements) {
     return element === WamElements.SecurityRealm ? { width: 500, height: 300 } : undefined;
   }
+
+  public getCellById(cellId: ID) {
+    const cell = this.graph?.getCell(cellId);
+    if (!cell) throw Error(`Unable to get cell ${cellId}`);
+    return cell;
+  }
+
+  public duplicateCell(cellId: ID): void {
+    const cell = this.graph.getCell(cellId);
+    if (!cell || !cell.isElement()) return;
+
+    const newCell = cell.clone();
+
+    const { x, y } = (cell as dia.Element).position();
+    const { width } = (cell as dia.Element).size();
+
+    const offset = 20;
+    (newCell as dia.Element).position(x + width + offset, y);
+
+    newCell.addTo(this.graph);
+    this.selectSingle(newCell.id);
+  }
+
+  public importJSON = async (file: File) => {
+    const JSONObject = await BaseUtility.parseJsonFile(file);
+    this.graph.fromJSON(JSONObject);
+    this.parseTitleFromGraph();
+    this._snackBar.open('Diagram imported successfully', 'Dismiss', { duration: 2500 });
+  };
+
+  public exportJSON = async () => {
+    if (this.graph.getCells().length === 0) {
+      this._snackBar.open('The diagram is empty', 'Dismiss', { duration: 3000 });
+      return;
+    }
+    this.parseTitleToGraph();
+    const jsonObject = this.graph.toJSON();
+    await BaseUtility.exportJSONHelper(jsonObject, this.title());
+
+    this._snackBar.open('Diagram exported as JSON', 'Dismiss', { duration: 2500 });
+  };
+
+  public exportPNG = async () => {
+    if (this.graph.getCells().length === 0) {
+      this._snackBar.open('The diagram is empty', 'Dismiss', { duration: 3000 });
+      return;
+    }
+    this.exportPNGPrepare('before');
+    html2canvas(this.canvas).then((canvas) => {
+      const based64image = canvas.toDataURL('image/png');
+      const anchor = document.createElement('a');
+      anchor.setAttribute('href', based64image);
+      anchor.setAttribute('download', this.title());
+      anchor.click();
+      anchor.remove();
+    });
+    this.exportPNGPrepare('after');
+    this._snackBar.open('Diagram exported as PNG', 'Dismiss', { duration: 2500 });
+  };
+
+  public toggleJointTheme(theme: Themes): void {
+    if (theme === Themes.Dark) {
+      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGridDark);
+      this.paper.drawBackground(JOINT_CONSTRAINTS.paperBackgroundDark);
+    }
+    if (theme === Themes.Light) {
+      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGrid);
+      this.paper.drawBackground(JOINT_CONSTRAINTS.paperBackground);
+    }
+  }
+
+  public toggleCellLayer = (cellId: ID) => {
+    const cellToToggle = this.graph.getCell(cellId);
+    const cells = this.graph.getCells();
+    const idx = cells.indexOf(cellToToggle);
+
+    if (idx === cells.length - 1) {
+      cellToToggle.toBack();
+      this._snackBar.open('Element sent to back', 'Dismiss', { duration: 2500 });
+    } else {
+      cellToToggle.toFront();
+      this._snackBar.open('Element sent to front', 'Dismiss', { duration: 2500 });
+    }
+  };
+
+  private exportPNGPrepare = (stage: 'before' | 'after') => {
+    if (stage === 'before') {
+      if (this._multiBoxG) this._multiBoxG.style.display = 'none';
+      this.unhighlightCells(this.selectedCells$.value);
+      this.paper.setGrid({ name: 'mesh', args: { color: 'transparent' } });
+      this.paper.fitToContent({
+        allowNewOrigin: 'any',
+        allowNegativeBottomRight: false,
+        padding: 5,
+      });
+    } else {
+      if (this._multiBoxG) this._multiBoxG.style.display = '';
+      this.highlightCells(this.selectedCells$.value);
+      this.paper.setDimensions(
+        JOINT_CONSTRAINTS.paperDefaultDimensions.width,
+        JOINT_CONSTRAINTS.paperDefaultDimensions.height,
+      );
+      this.paper.translate(0, 0);
+      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGrid);
+    }
+  };
+
   private parseTitleToGraph() {
     this.graph?.set('title', this.title());
   }
@@ -658,17 +671,6 @@ export class JointService implements OnDestroy {
       enabled ? JOINT_CONSTRAINTS.edgeHighlightColor : 'transparent',
     );
     view.model.attr(['edge', 'cursor'], enabled ? 'crosshair' : 'move');
-  }
-
-  public toggleJointTheme(theme: Themes): void {
-    if (theme === Themes.Dark) {
-      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGridDark);
-      this.paper.drawBackground(JOINT_CONSTRAINTS.paperBackgroundDark);
-    }
-    if (theme === Themes.Light) {
-      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGrid);
-      this.paper.drawBackground(JOINT_CONSTRAINTS.paperBackground);
-    }
   }
 
   private initToolTips(): void {

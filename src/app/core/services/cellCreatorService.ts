@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
-import { WamElements } from '../enums/WamElements';
-import { WAM_ELEMENTS_DATA, WamElementsDataValue } from '../constants/WamElementsData';
-import { CustomElement } from '../Infrastructure/CustomElement';
-import { WamLinks } from '../enums/WamLinks';
-import { CustomLink } from '../Infrastructure/CustomLink';
-import { WAM_LINK_DATA } from '../constants/WamLinksData';
 import { shapes } from '@joint/core';
+
+import { WAM_ELEMENTS_DATA, WamElementsDataValue } from '../constants/WamElementsData';
+import { WAM_LINK_DATA } from '../constants/WamLinksData';
+import { WamElements } from '../enums/WamElements';
+import { WamLinks } from '../enums/WamLinks';
+import { CustomElement } from '../Infrastructure/CustomElement';
+import { CustomLink } from '../Infrastructure/CustomLink';
+
 import Cylinder = shapes.standard.Cylinder;
 import standard = shapes.standard;
 

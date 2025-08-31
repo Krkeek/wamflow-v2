@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { get, set, del } from 'idb-keyval';
+import { del, get, set } from 'idb-keyval';
+
 import { LocalStorageKeys } from '../enums/LocalStorageKeys';
 
 @Injectable({ providedIn: 'root' })
