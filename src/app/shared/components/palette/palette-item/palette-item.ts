@@ -10,7 +10,7 @@ import { JointService } from '../../../../core/services/jointService';
   styleUrl: './palette-item.css',
 })
 export class PaletteItem implements AfterViewInit {
-  @ViewChild('canvas') canvas?: ElementRef<HTMLElement>;
+  @ViewChild('canvas') public canvas?: ElementRef<HTMLElement>;
 
   public element = input.required<WamElements>();
   private readonly jointService = inject(JointService);
