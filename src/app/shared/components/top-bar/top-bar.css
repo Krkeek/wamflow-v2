@@ -9,7 +9,7 @@
   font-weight: bolder;
 }
 .BrandNameSpan {
-  color: var(--ancient--color)
+  color: var(--ancient--color);
 }
 
 .Logo {
@@ -21,7 +21,6 @@
   align-items: center;
 }
 
-
 .Button {
   text-decoration: none;
   font-size: 1rem;
@@ -32,11 +31,9 @@
   border: none;
   padding: 0.7rem 1.3rem;
   cursor: pointer;
-
 }
 
 @media screen and (max-width: 600px) {
-
   .Button {
     font-size: 0.9rem;
     padding: 0.6rem 1rem;
@@ -48,5 +45,4 @@
     width: 2rem;
     height: auto;
   }
-
 }

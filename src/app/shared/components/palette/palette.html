@@ -5,10 +5,10 @@
     </ng-template>
     <div class="elements-palette">
       @for (element of elements; track $index) {
-        <div class="palette-item">
-          <app-palette-item [element]="element" />
-          <div class="Line"></div>
-        </div>
+      <div class="palette-item">
+        <app-palette-item [element]="element" />
+        <div class="Line"></div>
+      </div>
       }
     </div>
   </mat-tab>

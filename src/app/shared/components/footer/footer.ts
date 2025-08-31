@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
-import { MatIcon } from '@angular/material/icon';
-import { MatButton } from '@angular/material/button';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
-import { CredentialDialog } from '../credential-dialog/credential-dialog';
-import { DialogService } from '../../../core/services/dialogService';
+import { MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
+
+import { DialogService } from '../../../core/services/dialogService';
 import { AppSettings } from '../app-settings/app-settings';
+import { CredentialDialog } from '../credential-dialog/credential-dialog';
 
 @Component({
   selector: 'app-footer',

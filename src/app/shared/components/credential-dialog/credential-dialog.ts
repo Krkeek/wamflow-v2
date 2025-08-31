@@ -4,8 +4,6 @@ import { Component } from '@angular/core';
   selector: 'app-credential-dialog',
   imports: [],
   templateUrl: './credential-dialog.html',
-  styleUrl: './credential-dialog.css'
+  styleUrl: './credential-dialog.css',
 })
-export class CredentialDialog {
-
-}
+export class CredentialDialog {}

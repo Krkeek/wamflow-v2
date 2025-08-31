@@ -1,8 +1,8 @@
-:host{
-    height: 5%;
-    width: 95%;
-    display: flex;
-    align-items: center;
+:host {
+  height: 5%;
+  width: 95%;
+  display: flex;
+  align-items: center;
 }
 :host > * {
   flex: 1 1 50%;
@@ -13,9 +13,7 @@
   font-size: 1.6rem;
   width: fit-content;
   height: fit-content;
-
 }
-
 
 :host > button:first-child {
   border-radius: var(--defaultBorderRadius) 0 0 var(--defaultBorderRadius);
@@ -27,5 +25,3 @@
   border-radius: 0 var(--defaultBorderRadius) var(--defaultBorderRadius) 0;
   background-color: var(--ancientTwo-color);
 }
-
-

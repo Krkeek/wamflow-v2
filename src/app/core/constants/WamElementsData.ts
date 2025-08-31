@@ -1,7 +1,9 @@
-import { WamElements } from '../enums/WamElements';
-import { JOINT_CONSTRAINTS } from './JointConstraints';
 import { dia } from '@joint/core';
+
 import { CellDataDto } from '../dtos/cell-data.dto';
+import { WamElements } from '../enums/WamElements';
+
+import { JOINT_CONSTRAINTS } from './JointConstraints';
 import {
   dummyApplication,
   dummyIdentityProvider,

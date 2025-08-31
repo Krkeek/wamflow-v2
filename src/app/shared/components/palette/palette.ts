@@ -1,9 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import { PaletteItem } from './palette-item/palette-item';
-import { WamElements } from '../../../core/enums/WamElements';
-import { MatTab, MatTabGroup, MatTabLabel } from '@angular/material/tabs';
 import { MatIcon } from '@angular/material/icon';
+import { MatTab, MatTabGroup, MatTabLabel } from '@angular/material/tabs';
 import { MatTooltip } from '@angular/material/tooltip';
+
+import { WamElements } from '../../../core/enums/WamElements';
+
+import { PaletteItem } from './palette-item/palette-item';
 
 @Component({
   selector: 'app-palette',

@@ -1,4 +1,5 @@
 import { AfterViewInit, Component, ElementRef, inject, input, ViewChild } from '@angular/core';
+
 import { WamElements } from '../../../../core/enums/WamElements';
 import { JointService } from '../../../../core/services/jointService';
 

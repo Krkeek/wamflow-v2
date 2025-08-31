@@ -1,5 +1,7 @@
-import { DataTypes } from '../enums/DataTypes';
 import { dia } from '@joint/core';
+
+import { DataTypes } from '../enums/DataTypes';
+
 import ID = dia.Cell.ID;
 
 export type CellProp =

@@ -1,20 +1,25 @@
-import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { MatFormField } from '@angular/material/form-field';
-import { MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { MatOption, MatSelect } from '@angular/material/select';
-import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
-import { MatIcon } from '@angular/material/icon';
-import { MatTooltip } from '@angular/material/tooltip';
-import { JointService } from '../../../core/services/jointService';
-import { CellPanelInfo, CellProp } from '../../../core/dtos/cell-data.dto';
-import { debounceTime, distinctUntilChanged, Subscription } from 'rxjs';
-import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { KeyValuePipe } from '@angular/common';
-import { DataTypes } from '../../../core/enums/DataTypes';
-import { Validators } from '@angular/forms';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
+import { MatOption, MatSelect } from '@angular/material/select';
+import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltip } from '@angular/material/tooltip';
+import { debounceTime, distinctUntilChanged, Subscription } from 'rxjs';
+
+import { CellPanelInfo, CellProp } from '../../../core/dtos/cell-data.dto';
+import { DataTypes } from '../../../core/enums/DataTypes';
+import { JointService } from '../../../core/services/jointService';
 
 @Component({
   selector: 'app-cell-details-panel',
@@ -37,16 +42,18 @@ import { MatSnackBar } from '@angular/material/snack-bar';
   styleUrl: './cell-details-panel.scss',
 })
 export class CellDetailsPanel implements OnInit, OnDestroy {
+  protected _form!: FormGroup;
+  protected _dto = signal<CellPanelInfo | null>(null);
+
   private readonly jointService = inject(JointService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly _snackBar = inject(MatSnackBar);
+  private subscription = new Subscription();
 
-  protected _form!: FormGroup;
   protected get form(): FormGroup {
     if (!this._form) throw new Error('Form is undefined');
     return this._form;
   }
-  protected _dto = signal<CellPanelInfo | null>(null);
   protected get dto(): CellPanelInfo {
     const value = this._dto();
     if (!value) {
@@ -54,7 +61,6 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     }
     return value;
   }
-  private subscription = new Subscription();
 
   public ngOnInit() {
     this.subscription.add(
@@ -65,9 +71,35 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
       }),
     );
   }
+
   public ngOnDestroy() {
     this.subscription.unsubscribe();
   }
+
+  protected isFormEmpty(): boolean {
+    if (!this._form) return true;
+    const values = this._form.getRawValue();
+    return Object.values(values).every((v) => v === null || v === '' || v === false);
+  }
+
+  protected castEnumOptions(cellProp: string[]) {
+    if (Array.isArray(cellProp)) {
+      return cellProp;
+    } else throw new Error('Unsupported type "' + cellProp);
+  }
+
+  protected toggleCellLayer = () => {
+    this.jointService.toggleCellLayer(this.dto.id);
+  };
+
+  protected deleteCell = () => {
+    this.jointService.removeCells([this.dto.id]);
+  };
+
+  protected resetCellData = (): void => {
+    this.jointService.resetCellsData([this.dto.id]);
+  };
+
   private buildForm() {
     const d = this.dto;
     if (!d) return;
@@ -124,24 +156,6 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     }
   }
 
-  protected castEnumOptions(cellProp: string[]) {
-    if (Array.isArray(cellProp)) {
-      return cellProp;
-    } else throw new Error('Unsupported type "' + cellProp);
-  }
-
-  protected toggleCellLayer = () => {
-    this.jointService.toggleCellLayer(this.dto.id);
-  };
-
-  protected deleteCell = () => {
-    this.jointService.removeCells([this.dto.id]);
-  };
-
-  protected resetCellData = (): void => {
-    this.jointService.resetCellsData([this.dto.id]);
-  };
-
   private isFormValid(): boolean {
     const messages: string[] = [];
     const props = this.dto.data.props ?? {};
@@ -183,11 +197,5 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
       return false;
     }
     return true;
-  }
-
-  protected isFormEmpty(): boolean {
-    if (!this._form) return true;
-    const values = this._form.getRawValue();
-    return Object.values(values).every((v) => v === null || v === '' || v === false);
   }
 }

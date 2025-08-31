@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef } from '@angular/material/dialog';
 import { MatListModule } from '@angular/material/list';
 import { dia } from '@joint/core';
+
 import { DialogService } from '../../../core/services/dialogService';
 import { JointService } from '../../../core/services/jointService';
 

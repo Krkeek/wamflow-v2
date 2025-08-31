@@ -1,6 +1,7 @@
+import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { Component, ElementRef, inject, ViewChild } from '@angular/core';
-import { NgOptimizedImage, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+
 import { JointService } from '../../../core/services/jointService';
 
 @Component({

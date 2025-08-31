@@ -1,4 +1,5 @@
 import { dia } from '@joint/core';
+
 import ID = dia.Cell.ID;
 
 export class BaseUtility {

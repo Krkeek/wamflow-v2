@@ -8,9 +8,8 @@ describe('CredentialDialog', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CredentialDialog]
-    })
-    .compileComponents();
+      imports: [CredentialDialog],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(CredentialDialog);
     component = fixture.componentInstance;

@@ -1,11 +1,12 @@
 import { Component, DOCUMENT, HostListener, inject, OnDestroy, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { JointService } from './core/services/jointService';
 import { MatDialog } from '@angular/material/dialog';
-import { UnsavedChangesService } from './core/services/unsavedChangesService';
-import { ThemeService } from './core/services/themeService';
+import { RouterOutlet } from '@angular/router';
 import { Subscription } from 'rxjs';
+
 import { Themes } from './core/enums/Themes';
+import { JointService } from './core/services/jointService';
+import { ThemeService } from './core/services/themeService';
+import { UnsavedChangesService } from './core/services/unsavedChangesService';
 
 @Component({
   selector: 'app-root',
