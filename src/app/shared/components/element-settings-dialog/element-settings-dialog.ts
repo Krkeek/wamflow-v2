@@ -36,7 +36,7 @@ export class ElementSettingsDialog {
       .subscribe((ok) => {
         if (ok) {
           const view = this.data.view;
-          this.jointService.removeCellById(view.model.id);
+          this.jointService.removeCells([view.model.id]);
           this.ref.close();
         }
       });

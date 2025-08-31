@@ -25,11 +25,15 @@ import { LocalStorageService } from './localStorageService';
 import { NavControlService } from './navControlService';
 import { CustomLink } from '../Infrastructure/CustomLink';
 import { WamLinks } from '../enums/WamLinks';
+import html2canvas from 'html2canvas';
+import { CellDataDto, CellPanelInfo } from '../dtos/cell-data.dto';
+import { Themes } from '../enums/Themes';
+import { ThemeService } from './themeService';
+import { LocalStorageKeys } from '../enums/LocalStorageKeys';
 import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
 import CellView = dia.CellView;
-import html2canvas from 'html2canvas';
-import { CellPanelInfo } from '../dtos/cell-data.dto';
+import {  GraphSave } from '../interfaces/GraphSave';
 
 @Injectable({
   providedIn: 'root',
@@ -49,6 +53,7 @@ export class JointService implements OnDestroy {
   private readonly _localStorageService = inject(LocalStorageService);
   private readonly _navControlService = inject(NavControlService);
   private readonly _cellCreatorService = inject(CellCreatorService);
+  private readonly _themeService = inject(ThemeService);
 
   private _graph?: dia.Graph;
   private get graph() {
@@ -135,6 +140,10 @@ export class JointService implements OnDestroy {
         takeUntil(this.destroy$),
       )
       .subscribe();
+
+    this._themeService.activeTheme$.subscribe((theme) => {
+      if (this._paper) this.toggleJointTheme(theme);
+    });
   }
 
   private _toolsView?: ToolsView;
@@ -166,23 +175,7 @@ export class JointService implements OnDestroy {
     if (this.selectedCells$.value.length != 0) {
       if (e.key === 'Backspace' || e.key === 'Delete') {
         e.preventDefault();
-        this._dialogService
-          .confirm({
-            title: this.selectedCells$.value.length < 2 ? 'Delete cell' : 'Delete cells',
-            message:
-              this.selectedCells$.value.length < 2
-                ? 'Are you sure you want to delete this cell? This action cannot be undone.'
-                : 'Are you sure you want to delete these cells? This action cannot be undone.',
-            confirmText: this.selectedCells$.value.length < 2 ? 'Delete' : 'Delete All',
-            cancelText: 'Cancel',
-            confirmColor: 'danger',
-          })
-          .subscribe((ok) => {
-            if (ok) {
-              this.removeCells(this.selectedCells$.value);
-              this.removeMultiSelectionBox();
-            }
-          });
+        this.removeCells(this.selectedCells$.value);
       }
     }
 
@@ -220,6 +213,7 @@ export class JointService implements OnDestroy {
       height: this.paperDimensions().height,
       gridSize: 10,
       drawGridSize: 30,
+      background: { color: 'white' },
       drawGrid: JOINT_CONSTRAINTS.defaultGrid,
       defaultLink: () => this._cellCreatorService.createLink(this.activeLinkType$.value),
       cellViewNamespace: this.namespace,
@@ -256,10 +250,10 @@ export class JointService implements OnDestroy {
         },
       },
     });
-
     this.unhighlightCells(this.graph.getCells().map((c) => c.id));
     this.initToolTips();
     this.bindPaperEvents();
+    this.toggleJointTheme(this._themeService.activeTheme$.value);
     this.ready.set(true);
   }
 
@@ -465,8 +459,10 @@ export class JointService implements OnDestroy {
 
     if (idx === cells.length - 1) {
       cellToToggle.toBack();
+      this._snackBar.open('Element sent to back', 'Dismiss', { duration: 2500 });
     } else {
       cellToToggle.toFront();
+      this._snackBar.open('Element sent to front', 'Dismiss', { duration: 2500 });
     }
   };
 
@@ -519,20 +515,71 @@ export class JointService implements OnDestroy {
   }
 
   public removeCells = (idsToRemove: ID[]) => {
-    this._historyService.snapshot(this.graph);
-    const cellsToRemove = this.graph.getCells().filter((cell) => idsToRemove.includes(cell.id));
-    this.graph.removeCells(cellsToRemove);
+    this._dialogService
+      .confirm({
+        title: this.selectedCells$.value.length < 2 ? 'Delete cell' : 'Delete cells',
+        message:
+          this.selectedCells$.value.length < 2
+            ? 'Are you sure you want to delete this cell? This action cannot be undone.'
+            : 'Are you sure you want to delete these cells? This action cannot be undone.',
+        confirmText: this.selectedCells$.value.length < 2 ? 'Delete' : 'Delete All',
+        cancelText: 'Cancel',
+        confirmColor: 'danger',
+      })
+      .subscribe((ok) => {
+        if (ok) {
+          this._historyService.snapshot(this.graph);
+          const cellsToRemove = this.graph
+            .getCells()
+            .filter((cell) => idsToRemove.includes(cell.id));
+          this.graph.removeCells(cellsToRemove);
 
-    let deleteMessage = 'Element Deleted';
-    if (cellsToRemove.length > 1) deleteMessage = 'Elements Deleted';
-    this._snackBar.open(deleteMessage, 'Dismiss', { duration: 3000 });
+          let deleteMessage = 'Element Deleted';
+          if (cellsToRemove.length > 1) deleteMessage = 'Elements Deleted';
+          this._snackBar.open(deleteMessage, 'Dismiss', { duration: 3000 });
+
+          this.removeMultiSelectionBox();
+        }
+      });
   };
 
-  public removeCellById = (idToRemove: ID) => {
-    this._historyService.snapshot(this.graph);
-    const cellsToRemove = this.graph.getCell(idToRemove);
-    this.graph.removeCells([cellsToRemove]);
+  public resetCellsData = (idsToReset: ID[]) => {
+    this._dialogService
+      .confirm({
+        title: 'Reset all data',
+        message:
+          this.selectedCells$.value.length < 2
+            ? 'Are you sure you want to reset all properties for this cell? This action cannot be undone.'
+            : 'Are you sure you want to reset all properties for these cells? This action cannot be undone.',
+        confirmText: 'Reset All',
+        cancelText: 'Cancel',
+        confirmColor: 'danger',
+      })
+      .subscribe((ok) => {
+        if (ok) {
+          this._historyService.snapshot(this.graph);
+          const cellsToReset = this.graph.getCells().filter((cell) => idsToReset.includes(cell.id));
+
+          cellsToReset.forEach((cell) => {
+            const dto = cell.prop('attrs/data') as CellDataDto | undefined;
+            if (!dto) return;
+
+            dto.name = '';
+            dto.uri = '';
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            Object.entries(dto.props).forEach(([_key, prop]) => {
+              prop.value = null;
+            });
+            cell.prop('attrs/data', dto);
+            this.updateCellPanelInfo();
+          });
+
+          this._snackBar.open('All data is reset', 'Dismiss', { duration: 3000 });
+        }
+      });
   };
+
   public checkForCustomDimensions(element: WamElements) {
     return element === WamElements.SecurityRealm ? { width: 500, height: 300 } : undefined;
   }
@@ -553,9 +600,8 @@ export class JointService implements OnDestroy {
     this._graph = new dia.Graph({}, { cellNamespace: this.namespace });
     await this.tryLoadingLocalStorageGraph();
   }
-
   private tryLoadingLocalStorageGraph = async () => {
-    const saved = await this._localStorageService.load();
+    const saved = (await this._localStorageService.load(LocalStorageKeys.JointGraph)) as GraphSave;
     if (saved?.data) {
       try {
         this.graph.fromJSON(saved.data);
@@ -592,25 +638,24 @@ export class JointService implements OnDestroy {
     view.model.attr(['edge', 'cursor'], enabled ? 'crosshair' : 'move');
   }
 
+  public toggleJointTheme(theme: Themes): void {
+    if (theme === Themes.Dark) {
+      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGridDark);
+      this.paper.drawBackground(JOINT_CONSTRAINTS.paperBackgroundDark);
+    }
+    if (theme === Themes.Light) {
+      this.paper.setGrid(JOINT_CONSTRAINTS.defaultGrid);
+      this.paper.drawBackground(JOINT_CONSTRAINTS.paperBackground);
+    }
+  }
+
   private initToolTips(): void {
     const removeButton = new elementTools.Remove({
       action: (evt: dia.Event, view: dia.ElementView) => {
         evt.preventDefault();
         evt.stopPropagation();
 
-        this._dialogService
-          .confirm({
-            title: 'Delete cell',
-            message: 'Are you sure you want to delete this cell? This action cannot be undone.',
-            confirmText: 'Delete',
-            cancelText: 'Cancel',
-            confirmColor: 'danger',
-          })
-          .subscribe((ok) => {
-            if (ok) {
-              this.removeCellById(view.model.id);
-            }
-          });
+        this.removeCells([view.model.id]);
       },
     });
 
@@ -725,8 +770,8 @@ export class JointService implements OnDestroy {
 
   private persist() {
     const data = this.graph.toJSON();
-    const payload = { version: 1, ts: Date.now(), data };
-    return this._localStorageService.save(payload);
+    const payload: GraphSave = { version: 1, ts: Date.now(), data };
+    return this._localStorageService.save<GraphSave>(LocalStorageKeys.JointGraph, payload);
   }
 
   private onElementPointerDown = (
@@ -1045,20 +1090,7 @@ export class JointService implements OnDestroy {
       this._multiBoxDeleteButton.addEventListener('touchstart', consume, { passive: false });
 
       this._multiBoxDeleteButton.addEventListener('click', () => {
-        this._dialogService
-          .confirm({
-            title: 'Delete cells',
-            message: 'Are you sure you want to delete these cells? This action cannot be undone.',
-            confirmText: 'Delete All',
-            cancelText: 'Cancel',
-            confirmColor: 'danger',
-          })
-          .subscribe((ok) => {
-            if (ok) {
-              this.removeCells(this.selectedCells$.value);
-              this.removeMultiSelectionBox();
-            }
-          });
+        this.removeCells(this.selectedCells$.value);
       });
 
       this._multiBoxDeleteButton.appendChild(circle);

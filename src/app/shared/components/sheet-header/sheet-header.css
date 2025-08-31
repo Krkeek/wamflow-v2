@@ -12,6 +12,7 @@
   border: none;
   cursor: pointer;
   background: none;
+  color: var(--unfocusIcon-color);
 }
 
 
@@ -39,6 +40,7 @@
   font: inherit;
   background: transparent;
   padding-left: 0.5rem;
+  color: var(--unfocusIcon-color);
 }
 
 .menuForm {

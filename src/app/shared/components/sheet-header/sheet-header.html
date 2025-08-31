@@ -1,7 +1,7 @@
 <div class="container">
   <div class="left-side">
     <button
-      [style.color]="panelState.left ? 'var(--ancient--color)' : ''"
+      [style.color]="panelState.left ? 'var(--ancient--color)' : 'var(--unfocusIcon-color)'"
       (click)="this.navControlService.toggle('left')"
       class="settingDiv"
       matTooltip="Dock Left Panel"
@@ -38,7 +38,7 @@
       <mat-icon>more_vert</mat-icon>
     </button>
     <button
-      [style.color]="panelState.right ? 'var(--ancient--color)' : ''"
+      [style.color]="panelState.right ? 'var(--ancient--color)' : 'var(--unfocusIcon-color)'"
       (click)="this.navControlService.toggle('right')"
       class="settingDiv"
       matTooltip="Dock Right Panel"
