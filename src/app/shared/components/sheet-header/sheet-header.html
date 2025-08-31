@@ -26,7 +26,7 @@
       (change)="onLinkTypeChange($event.value)"
     >
       @for (link of linkOptions; track $index) {
-        <mat-button-toggle [value]="link.value">{{ link.label }}</mat-button-toggle>
+      <mat-button-toggle [value]="link.value">{{ link.label }}</mat-button-toggle>
       }
     </mat-button-toggle-group>
 

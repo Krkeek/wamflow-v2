@@ -5,7 +5,7 @@ type Side = 'left' | 'right';
 
 @Injectable({ providedIn: 'root' })
 export class NavControlService {
-  private state = new BehaviorSubject<{ left: boolean; right: boolean }>({
+  public state = new BehaviorSubject<{ left: boolean; right: boolean }>({
     left: true,
     right: true,
   });

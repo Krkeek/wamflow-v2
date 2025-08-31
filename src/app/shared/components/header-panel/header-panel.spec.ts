@@ -8,9 +8,8 @@ describe('HeaderPanel', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [HeaderPanel]
-    })
-    .compileComponents();
+      imports: [HeaderPanel],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(HeaderPanel);
     component = fixture.componentInstance;

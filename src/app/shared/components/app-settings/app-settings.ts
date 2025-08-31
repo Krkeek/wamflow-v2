@@ -1,9 +1,10 @@
-import { Component, inject } from '@angular/core';
-import { MatSlideToggle } from '@angular/material/slide-toggle';
-import { MatNavList } from '@angular/material/list';
-import { ThemeService } from '../../../core/services/themeService';
-import { Themes } from '../../../core/enums/Themes';
 import { AsyncPipe } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import { MatNavList } from '@angular/material/list';
+import { MatSlideToggle } from '@angular/material/slide-toggle';
+
+import { Themes } from '../../../core/enums/Themes';
+import { ThemeService } from '../../../core/services/themeService';
 
 @Component({
   selector: 'app-app-settings',

@@ -7,19 +7,11 @@
     "build": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "lint": "ng lint"
-  },
-  "prettier": {
-    "printWidth": 100,
-    "singleQuote": true,
-    "overrides": [
-      {
-        "files": "*.html",
-        "options": {
-          "parser": "angular"
-        }
-      }
-    ]
+    "lint": "ng lint",
+    "lint:eslint": "eslint . --ext .ts,.html",
+    "lint:fix": "eslint . --ext .ts,.html --fix",
+    "format": "prettier --write \"**/*.{ts,js,html,scss,css,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,js,html,scss,css,json,md}\""
   },
   "private": true,
   "dependencies": {
@@ -47,7 +39,9 @@
     "angular-eslint": "20.1.1",
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-unused-imports": "^4.2.0",
     "jasmine-core": "~5.8.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",

@@ -1,11 +1,12 @@
+import { ComponentType } from '@angular/cdk/portal';
 import { inject, Injectable } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { ComponentType } from '@angular/cdk/portal';
+import { firstValueFrom } from 'rxjs';
+
 import {
   ConfirmationDialog,
   ConfirmOptions,
 } from '../../shared/components/confirmation-dialog/confirmation-dialog';
-import { firstValueFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',

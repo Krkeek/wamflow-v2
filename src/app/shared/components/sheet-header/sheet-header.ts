@@ -1,8 +1,4 @@
 import { Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { MatIcon } from '@angular/material/icon';
-import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
-import { MatCheckbox, MatCheckboxChange } from '@angular/material/checkbox';
-import { JointService } from '../../../core/services/jointService';
 import {
   FormBuilder,
   FormGroup,
@@ -10,16 +6,21 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatButton } from '@angular/material/button';
+import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-toggle';
+import { MatCheckbox, MatCheckboxChange } from '@angular/material/checkbox';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
+import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltip } from '@angular/material/tooltip';
-import { NavControlService } from '../../../core/services/navControlService';
-import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-toggle';
-import { WamLinks } from '../../../core/enums/WamLinks';
 import { debounceTime, distinctUntilChanged, Subscription } from 'rxjs';
+
 import { LabelModes } from '../../../core/enums/LabelModes';
+import { WamLinks } from '../../../core/enums/WamLinks';
+import { JointService } from '../../../core/services/jointService';
+import { NavControlService } from '../../../core/services/navControlService';
 
 @Component({
   selector: 'app-sheet-header',
@@ -46,16 +47,13 @@ export class SheetHeader implements OnInit, OnDestroy {
   @ViewChild('fileInput', { static: false })
   fileInput!: ElementRef<HTMLInputElement>;
   protected _form!: FormGroup;
+  protected panelState = { left: false, right: false };
 
   protected subscriptions: Subscription[] = [];
   protected readonly jointService = inject(JointService);
   protected readonly navControlService = inject(NavControlService);
-  private _snackBar = inject(MatSnackBar);
-  private readonly _formBuilder = inject(FormBuilder);
-  protected panelState = { left: false, right: false };
-  protected setActiveLinkType = (link: WamLinks) => this.jointService.activeLinkType$.next(link);
   protected activeLinkType = this.jointService.activeLinkType$.value;
-  private _dimensions = this.jointService.paperDimensions();
+  protected readonly LabelModes = LabelModes;
 
   protected linkOptions = [
     { label: 'Invocation', value: WamLinks.Invocation },
@@ -63,7 +61,18 @@ export class SheetHeader implements OnInit, OnDestroy {
     { label: 'Trust', value: WamLinks.TrustRelationship },
   ];
 
-  onLinkTypeChange(val: WamLinks) {
+  private readonly _formBuilder = inject(FormBuilder);
+  private _snackBar = inject(MatSnackBar);
+  private _dimensions = this.jointService.paperDimensions();
+
+  protected get title() {
+    return this.jointService.title();
+  }
+  protected set title(v: string) {
+    this.jointService.setTitle(v);
+  }
+
+  public onLinkTypeChange(val: WamLinks) {
     this.setActiveLinkType(val);
     this.activeLinkType = val;
   }
@@ -75,6 +84,51 @@ export class SheetHeader implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subscriptions?.forEach((s) => s.unsubscribe());
   }
+  protected setActiveLinkType = (link: WamLinks) => this.jointService.activeLinkType$.next(link);
+
+  protected updateForm(width: number, height: number) {
+    this._form.patchValue({
+      width: width,
+      height: height,
+    });
+  }
+
+  protected toggleLabels(event: MatCheckboxChange, label: LabelModes) {
+    if (event.checked) {
+      this.jointService.cellLabelMode.next(label);
+    } else {
+      this.jointService.cellLabelMode.next(LabelModes.none);
+    }
+  }
+
+  protected ready() {
+    return this.jointService.ready();
+  }
+
+  protected openFilePicker() {
+    this.fileInput.nativeElement.click();
+  }
+
+  protected async onFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    await this.handleFile(file);
+    input.value = '';
+  }
+
+  protected async exportJSON() {
+    await this.jointService.exportJSON();
+  }
+
+  protected async exportPNG() {
+    await this.jointService.exportPNG();
+  }
+
+  protected resetPaper = () => {
+    this.jointService.resetPaper();
+  };
 
   private buildForm() {
     this._form = this._formBuilder.group({
@@ -108,62 +162,9 @@ export class SheetHeader implements OnInit, OnDestroy {
     );
   }
 
-  protected updateForm(width: number, height: number) {
-    this._form.patchValue({
-      width: width,
-      height: height,
-    });
-  }
-
-  protected get title() {
-    return this.jointService.title();
-  }
-  protected set title(v: string) {
-    this.jointService.setTitle(v);
-  }
-
-  protected ready() {
-    return this.jointService.ready();
-  }
-
-  protected openFilePicker() {
-    this.fileInput.nativeElement.click();
-  }
-
-  protected async onFileChange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    await this.handleFile(file);
-    input.value = '';
-  }
-
-  protected async exportJSON() {
-    await this.jointService.exportJSON();
-  }
-
-  protected async exportPNG() {
-    await this.jointService.exportPNG();
-  }
-
-  protected resetPaper = () => {
-    this.jointService.resetPaper();
-  };
-
   private async handleFile(file: File) {
     const text = await file.text();
     console.log('Loaded JSON:', text);
     await this.jointService.importJSON(file);
   }
-
-  protected toggleLabels(event: MatCheckboxChange, label: LabelModes) {
-    if (event.checked) {
-      this.jointService.cellLabelMode.next(label);
-    } else {
-      this.jointService.cellLabelMode.next(LabelModes.none);
-    }
-  }
-
-  protected readonly LabelModes = LabelModes;
 }

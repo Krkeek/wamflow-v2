@@ -1,4 +1,5 @@
 import { dia, elementTools } from '@joint/core';
+
 import { JOINT_CONSTRAINTS } from '../constants/JointConstraints';
 
 export const ResizeControl = elementTools.Control.extend({

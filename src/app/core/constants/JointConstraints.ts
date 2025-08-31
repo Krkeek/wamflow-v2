@@ -1,4 +1,5 @@
 import { dia } from '@joint/core';
+
 import GridOptions = dia.Paper.GridOptions;
 
 export const JOINT_CONSTRAINTS = {

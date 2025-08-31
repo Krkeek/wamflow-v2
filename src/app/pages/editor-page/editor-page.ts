@@ -1,14 +1,15 @@
 import { AfterViewInit, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
-import { JointService } from '../../core/services/jointService';
-import { Palette } from '../../shared/components/palette/palette';
-import { WamElements } from '../../core/enums/WamElements';
-import { MatIconModule } from '@angular/material/icon';
-import { SheetHeader } from '../../shared/components/sheet-header/sheet-header';
-import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
+
+import { WamElements } from '../../core/enums/WamElements';
+import { JointService } from '../../core/services/jointService';
 import { NavControlService } from '../../core/services/navControlService';
-import { Footer } from '../../shared/components/footer/footer';
 import { CellDetailsPanel } from '../../shared/components/cell-details-panel/cell-details-panel';
+import { Footer } from '../../shared/components/footer/footer';
+import { Palette } from '../../shared/components/palette/palette';
+import { SheetHeader } from '../../shared/components/sheet-header/sheet-header';
 
 @Component({
   selector: 'app-editor-page',
@@ -28,9 +29,10 @@ import { CellDetailsPanel } from '../../shared/components/cell-details-panel/cel
 })
 export class EditorPage implements AfterViewInit, OnInit {
   @ViewChild('canvas') canvas?: ElementRef<HTMLElement>;
+  protected panelState = { left: false, right: false };
+
   private readonly navControlService = inject(NavControlService);
   private readonly jointService = inject(JointService);
-  protected panelState = { left: false, right: false };
 
   ngOnInit() {
     this.navControlService.state$.subscribe((state) => (this.panelState = state));
