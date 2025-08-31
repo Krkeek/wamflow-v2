@@ -94,7 +94,7 @@ export class JointService implements OnDestroy {
 
   private _canvas?: HTMLElement;
 
-  constructor() {
+  public constructor() {
     this.selectedCells$
       .pipe(
         distinctUntilChanged((a, b) => BaseUtility.arraysEqual(a, b)),

@@ -34,6 +34,18 @@ module.exports = tseslint.config(
         'error',
         { type: 'element', prefix: 'app', style: 'kebab-case' },
       ],
+      '@typescript-eslint/explicit-member-accessibility': [
+        'warn',
+        {
+          accessibility: 'explicit',
+          overrides: {
+            accessors: 'explicit',
+            methods: 'explicit',
+            properties: 'explicit',
+            parameterProperties: 'explicit',
+          },
+        },
+      ],
 
       /* general */
       'no-empty-function': ['warn'],
