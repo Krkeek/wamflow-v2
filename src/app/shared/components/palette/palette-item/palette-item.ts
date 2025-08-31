@@ -15,7 +15,7 @@ export class PaletteItem implements AfterViewInit {
   public element = input.required<WamElements>();
   private readonly jointService = inject(JointService);
 
-  ngAfterViewInit() {
+  public ngAfterViewInit() {
     if (!this.canvas) throw new Error('Canvas not initialized');
     queueMicrotask(() => {
       const host = this.canvas!.nativeElement;
@@ -24,7 +24,7 @@ export class PaletteItem implements AfterViewInit {
     });
   }
 
-  onDragStart(e: DragEvent) {
+  public onDragStart(e: DragEvent) {
     if (e.dataTransfer == null) {
       throw new Error('e.transfer is null');
     }

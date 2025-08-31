@@ -13,7 +13,7 @@ import { JointService } from '../../../core/services/jointService';
 })
 export class HeaderPanel {
   @ViewChild('fileInput', { static: false })
-  fileInput!: ElementRef<HTMLInputElement>;
+  public fileInput!: ElementRef<HTMLInputElement>;
 
   private readonly jointService = inject(JointService);
 

@@ -28,17 +28,17 @@ import { SheetHeader } from '../../shared/components/sheet-header/sheet-header';
   styleUrl: './editor-page.css',
 })
 export class EditorPage implements AfterViewInit, OnInit {
-  @ViewChild('canvas') canvas?: ElementRef<HTMLElement>;
+  @ViewChild('canvas') protected canvas?: ElementRef<HTMLElement>;
   protected panelState = { left: false, right: false };
 
   private readonly navControlService = inject(NavControlService);
   private readonly jointService = inject(JointService);
 
-  ngOnInit() {
+  public ngOnInit() {
     this.navControlService.state$.subscribe((state) => (this.panelState = state));
   }
 
-  async ngAfterViewInit() {
+  public async ngAfterViewInit() {
     if (this.canvas) {
       await this.jointService.initPaper(this.canvas.nativeElement);
     } else {
@@ -46,12 +46,12 @@ export class EditorPage implements AfterViewInit, OnInit {
     }
   }
 
-  onDragOver(evt: DragEvent) {
+  public onDragOver(evt: DragEvent) {
     evt.preventDefault();
     evt.dataTransfer!.dropEffect = 'copy';
   }
 
-  onDrop(evt: DragEvent) {
+  protected onDrop(evt: DragEvent) {
     evt.preventDefault();
 
     if (!evt.dataTransfer) throw new Error('evt.dataTransfer is null');

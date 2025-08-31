@@ -7,7 +7,7 @@ import { UnsavedChangesService } from '../services/unsavedChangesService';
 export class UnsavedChangesGuard implements CanDeactivate<boolean> {
   private readonly unsavedChangesService = inject(UnsavedChangesService);
 
-  canDeactivate(): boolean {
+  public canDeactivate(): boolean {
     if (!this.unsavedChangesService.hasPendingChanges()) return true;
     return window.confirm('You have unsaved changes. Leave this page?');
   }

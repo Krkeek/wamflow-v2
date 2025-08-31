@@ -7,14 +7,14 @@ export class HistoryService {
   private redoStack: dia.Graph.Attributes[] = [];
   private suspended = false;
 
-  snapshot(graph: dia.Graph) {
+  public snapshot(graph: dia.Graph) {
     if (this.suspended) return;
     this.redoStack = [];
     this.undoStack.push(graph.toJSON());
     if (this.undoStack.length > 50) this.undoStack.shift();
   }
 
-  withSuspended<T>(graph: dia.Graph, fn: () => T): T {
+  public withSuspended<T>(graph: dia.Graph, fn: () => T): T {
     const prev = this.suspended;
     this.suspended = true;
     try {
@@ -24,7 +24,7 @@ export class HistoryService {
     }
   }
 
-  undo(graph: dia.Graph) {
+  public undo(graph: dia.Graph) {
     if (!this.undoStack.length) return;
     const current = graph.toJSON();
     const prev = this.undoStack.pop()!;
@@ -32,7 +32,7 @@ export class HistoryService {
     this.withSuspended(graph, () => graph.fromJSON(prev));
   }
 
-  redo(graph: dia.Graph) {
+  public redo(graph: dia.Graph) {
     if (!this.redoStack.length) return;
     const current = graph.toJSON();
     const next = this.redoStack.pop()!;
@@ -40,10 +40,10 @@ export class HistoryService {
     this.withSuspended(graph, () => graph.fromJSON(next));
   }
 
-  canUndo() {
+  public canUndo() {
     return this.undoStack.length > 0;
   }
-  canRedo() {
+  public canRedo() {
     return this.redoStack.length > 0;
   }
 }

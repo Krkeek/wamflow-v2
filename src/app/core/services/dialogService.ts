@@ -23,7 +23,7 @@ export class DialogService {
     });
   }
 
-  confirm(options: ConfirmOptions, config?: Omit<MatDialogConfig<ConfirmOptions>, 'data'>) {
+  public confirm(options: ConfirmOptions, config?: Omit<MatDialogConfig<ConfirmOptions>, 'data'>) {
     return this.dialog
       .open<
         ConfirmationDialog,
@@ -33,7 +33,7 @@ export class DialogService {
       .afterClosed();
   }
 
-  async withConfirm(options: ConfirmOptions, action: () => void | Promise<void>) {
+  public async withConfirm(options: ConfirmOptions, action: () => void | Promise<void>) {
     const ok = await firstValueFrom(this.confirm(options));
     if (ok) await action();
     return ok === true;

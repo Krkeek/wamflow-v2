@@ -23,7 +23,7 @@ export class App implements OnInit, OnDestroy {
   private readonly jointService = inject(JointService);
   private readonly themeService = inject(ThemeService);
 
-  async ngOnInit() {
+  public async ngOnInit() {
     this.subscription.add(
       this.themeService.activeTheme$.subscribe((theme) => {
         const body = this.document.body;
@@ -37,12 +37,12 @@ export class App implements OnInit, OnDestroy {
     await this.themeService.loadThemeFromLocalStorage();
   }
 
-  ngOnDestroy() {
+  public ngOnDestroy() {
     this.subscription.unsubscribe();
   }
 
   @HostListener('window:beforeunload', ['$event'])
-  handleBeforeUnload(event: BeforeUnloadEvent) {
+  protected handleBeforeUnload(event: BeforeUnloadEvent) {
     if (this.unsavedChangesService.hasPendingChanges()) {
       event.preventDefault();
       event.returnValue = '';
@@ -50,7 +50,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   @HostListener('window:keydown', ['$event'])
-  onDocKeydown(e: KeyboardEvent) {
+  protected onDocKeydown(e: KeyboardEvent) {
     if (this.dialog.openDialogs.length) return;
 
     const target = e.target as HTMLElement | null;
