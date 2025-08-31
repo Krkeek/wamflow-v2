@@ -1,7 +1,7 @@
 <div class="container">
   <div class="left-side">
     <button
-      [style.color]="panelState.left ? 'var(--ancient--color)' : ''"
+      [style.color]="panelState.left ? 'var(--ancient--color)' : 'var(--unfocusIcon-color)'"
       (click)="this.navControlService.toggle('left')"
       class="settingDiv"
       matTooltip="Dock Left Panel"
@@ -38,7 +38,7 @@
       <mat-icon>more_vert</mat-icon>
     </button>
     <button
-      [style.color]="panelState.right ? 'var(--ancient--color)' : ''"
+      [style.color]="panelState.right ? 'var(--ancient--color)' : 'var(--unfocusIcon-color)'"
       (click)="this.navControlService.toggle('right')"
       class="settingDiv"
       matTooltip="Dock Right Panel"
@@ -112,37 +112,23 @@
     role="group"
     tabindex="0"
   >
-    <mat-form-field appearance="fill" class="field">
-      <mat-label>Width (px)</mat-label>
-      <input
-        (ngModelChange)="updatePaperWidth($event)"
-        [ngModel]="paperDimensions.width"
-        matInput
-        max="10000"
-        min="1920"
-        step="10"
-        type="number"
-      />
-    </mat-form-field>
+    <form [formGroup]="_form">
+      <mat-form-field appearance="fill" class="field">
+        <mat-label>Width (px)</mat-label>
+        <input formControlName="width" matInput type="number" />
+      </mat-form-field>
 
-    <mat-form-field appearance="fill" class="field">
-      <mat-label>Height (px)</mat-label>
-      <input
-        (ngModelChange)="updatePaperHeight($event)"
-        [ngModel]="paperDimensions.height"
-        matInput
-        max="10000"
-        min="1080"
-        step="10"
-        type="number"
-      />
-    </mat-form-field>
+      <mat-form-field appearance="fill" class="field">
+        <mat-label>Height (px)</mat-label>
+        <input formControlName="height" matInput step="10" type="number" />
+      </mat-form-field>
+    </form>
 
     <div class="rowPresets">
-      <button (click)="updatePaperDimensions(1920, 1080)" mat-stroked-button>1920×1080</button>
-      <button (click)="updatePaperDimensions(2000, 2000)" mat-stroked-button>2k</button>
-      <button (click)="updatePaperDimensions(4000, 4000)" mat-stroked-button>4k</button>
-      <button (click)="updatePaperDimensions(4000, 4000)" mat-stroked-button>Reset Default</button>
+      <button (click)="updateForm(1920, 1080)" mat-stroked-button>1920×1080</button>
+      <button (click)="updateForm(2000, 2000)" mat-stroked-button>2k</button>
+      <button (click)="updateForm(4000, 4000)" mat-stroked-button>4k</button>
+      <button (click)="updateForm(4000, 4000)" mat-stroked-button>Reset Default</button>
     </div>
   </div>
 </mat-menu>

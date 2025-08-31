@@ -1,9 +1,15 @@
-import { Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatCheckbox, MatCheckboxChange } from '@angular/material/checkbox';
 import { JointService } from '../../../core/services/jointService';
-import { FormsModule } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatButton } from '@angular/material/button';
 import { MatInput } from '@angular/material/input';
@@ -12,6 +18,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { NavControlService } from '../../../core/services/navControlService';
 import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-toggle';
 import { WamLinks } from '../../../core/enums/WamLinks';
+import { debounceTime, distinctUntilChanged, Subscription } from 'rxjs';
 import { LabelModes } from '../../../core/enums/LabelModes';
 
 @Component({
@@ -30,20 +37,25 @@ import { LabelModes } from '../../../core/enums/LabelModes';
     MatTooltip,
     MatButtonToggleGroup,
     MatButtonToggle,
+    ReactiveFormsModule,
   ],
   templateUrl: './sheet-header.html',
   styleUrl: './sheet-header.css',
 })
-export class SheetHeader implements OnInit {
+export class SheetHeader implements OnInit, OnDestroy {
   @ViewChild('fileInput', { static: false })
   fileInput!: ElementRef<HTMLInputElement>;
+  protected _form!: FormGroup;
 
+  protected subscriptions: Subscription[] = [];
   protected readonly jointService = inject(JointService);
   protected readonly navControlService = inject(NavControlService);
   private _snackBar = inject(MatSnackBar);
+  private readonly _formBuilder = inject(FormBuilder);
   protected panelState = { left: false, right: false };
   protected setActiveLinkType = (link: WamLinks) => this.jointService.activeLinkType$.next(link);
   protected activeLinkType = this.jointService.activeLinkType$.value;
+  private _dimensions = this.jointService.paperDimensions();
 
   protected linkOptions = [
     { label: 'Invocation', value: WamLinks.Invocation },
@@ -58,42 +70,56 @@ export class SheetHeader implements OnInit {
 
   ngOnInit() {
     this.navControlService.state$.subscribe((state) => (this.panelState = state));
+    this.buildForm();
+  }
+  ngOnDestroy(): void {
+    this.subscriptions?.forEach((s) => s.unsubscribe());
   }
 
-  private _dims = this.jointService.paperDimensions(); // { width, height }
+  private buildForm() {
+    this._form = this._formBuilder.group({
+      width: this._formBuilder.control(this._dimensions.width, [
+        Validators.required,
+        Validators.max(10000),
+        Validators.min(1000),
+      ]),
+      height: this._formBuilder.control(this._dimensions.height, [
+        Validators.required,
+        Validators.max(10000),
+        Validators.min(1000),
+      ]),
+    });
+
+    this.subscriptions.push(
+      this._form.valueChanges
+        .pipe(debounceTime(500), distinctUntilChanged())
+        .subscribe((value: { width: number; height: number }) => {
+          if (this._form.invalid) {
+            this._snackBar.open(`Dimensions must be between 1000–10000 px.`, 'Dismiss', {
+              duration: 3000,
+            });
+            return;
+          }
+
+          const { width, height } = value;
+          this.jointService.updatePaperDimensions(width, height);
+          this._snackBar.open(`Sheet set to ${width}×${height} px`, 'Dismiss', { duration: 3000 });
+        }),
+    );
+  }
+
+  protected updateForm(width: number, height: number) {
+    this._form.patchValue({
+      width: width,
+      height: height,
+    });
+  }
 
   protected get title() {
     return this.jointService.title();
   }
   protected set title(v: string) {
     this.jointService.setTitle(v);
-  }
-
-  protected get paperDimensions() {
-    return this._dims; // return the SAME reference
-  }
-  protected set paperDimensions(dim: { width: number; height: number }) {
-    this._dims = dim; // update reference so the view updates
-    this.jointService.updatePaperDimensions(dim.width, dim.height);
-  }
-
-  protected updatePaperDimensions(width: number, height: number) {
-    const { width: w, height: h } = this.validateDimensions(width, height);
-    this.openSnackBar(`Sheet set to ${w}×${h}px`, 'Dismiss');
-    this.paperDimensions = { width, height };
-  }
-
-  protected updatePaperWidth(width: number) {
-    const { width: w, height: h } = this.validateDimensions(width, this.paperDimensions.height);
-    this.openSnackBar(`Sheet set to ${w}×${h}px`, 'Dismiss');
-
-    this.paperDimensions = { width: Number(width), height: this.paperDimensions.height };
-  }
-  protected updatePaperHeight(height: number) {
-    const { width: w, height: h } = this.validateDimensions(this.paperDimensions.width, height);
-    this.openSnackBar(`Sheet set to ${w}×${h}`, 'Dismiss');
-
-    this.paperDimensions = { width: this.paperDimensions.width, height: Number(height) };
   }
 
   protected ready() {
@@ -130,22 +156,6 @@ export class SheetHeader implements OnInit {
     console.log('Loaded JSON:', text);
     await this.jointService.importJSON(file);
   }
-
-  private openSnackBar(message: string, action: string) {
-    this._snackBar.open(message, action, { duration: 3000 });
-  }
-
-  private validateDimensions = (width: number, height: number) => {
-    const MIN_W = 1920;
-    const MIN_H = 1080;
-    const MAX_W = 10000;
-    const MAX_H = 10000;
-
-    const safeWidth = Math.min(Math.max(width, MIN_W), MAX_W);
-    const safeHeight = Math.min(Math.max(height, MIN_H), MAX_H);
-
-    return { width: safeWidth, height: safeHeight };
-  };
 
   protected toggleLabels(event: MatCheckboxChange, label: LabelModes) {
     if (event.checked) {

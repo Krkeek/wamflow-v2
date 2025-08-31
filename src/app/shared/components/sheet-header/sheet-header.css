@@ -12,6 +12,7 @@
   border: none;
   cursor: pointer;
   background: none;
+  color: var(--unfocusIcon-color);
 }
 
 
@@ -39,15 +40,19 @@
   font: inherit;
   background: transparent;
   padding-left: 0.5rem;
+  color: var(--unfocusIcon-color);
 }
 
 .menuForm {
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.menuForm > form  {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  box-sizing: border-box;
 }
 
 .rowPresets {

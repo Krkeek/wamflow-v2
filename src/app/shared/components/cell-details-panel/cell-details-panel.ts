@@ -46,14 +46,21 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     if (!this._form) throw new Error('Form is undefined');
     return this._form;
   }
-  protected dto = signal<CellPanelInfo | null>(null);
+  protected _dto = signal<CellPanelInfo | null>(null);
+  protected get dto(): CellPanelInfo {
+    const value = this._dto();
+    if (!value) {
+      throw new Error('Cell panel info not set yet.');
+    }
+    return value;
+  }
   private subscription = new Subscription();
 
   public ngOnInit() {
     this.subscription.add(
       this.jointService.currentCellPanelInfo$.subscribe((d) => {
-        this.dto.set(d);
-        if (!this.dto()) return;
+        this._dto.set(d);
+        if (!this._dto()) return;
         this.buildForm();
       }),
     );
@@ -62,7 +69,7 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     this.subscription.unsubscribe();
   }
   private buildForm() {
-    const d = this.dto();
+    const d = this.dto;
     if (!d) return;
     const group: Record<string, FormControl> = {
       name: this.formBuilder.control(d.data.name ?? '', []),
@@ -124,15 +131,20 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
   }
 
   protected toggleCellLayer = () => {
-    const dto = this.dto();
-    if (dto) {
-      this.jointService.toggleCellLayer(dto.id);
-    }
+    this.jointService.toggleCellLayer(this.dto.id);
+  };
+
+  protected deleteCell = () => {
+    this.jointService.removeCells([this.dto.id]);
+  };
+
+  protected resetCellData = (): void => {
+    this.jointService.resetCellsData([this.dto.id]);
   };
 
   private isFormValid(): boolean {
     const messages: string[] = [];
-    const props = this.dto()?.data.props ?? {};
+    const props = this.dto.data.props ?? {};
 
     Object.entries(this.form.controls).forEach(([key, ctrl]) => {
       const label = props[key]?.label || key;
@@ -171,5 +183,11 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
       return false;
     }
     return true;
+  }
+
+  protected isFormEmpty(): boolean {
+    if (!this._form) return true;
+    const values = this._form.getRawValue();
+    return Object.values(values).every((v) => v === null || v === '' || v === false);
   }
 }
