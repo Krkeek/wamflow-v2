@@ -163,8 +163,6 @@ export class SheetHeader implements OnInit, OnDestroy {
   }
 
   private async handleFile(file: File) {
-    const text = await file.text();
-    console.log('Loaded JSON:', text);
     await this.jointService.importJSON(file);
   }
 }

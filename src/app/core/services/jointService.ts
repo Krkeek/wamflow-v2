@@ -16,7 +16,8 @@ import {
 
 import { ElementSettingsDialog } from '../../shared/components/element-settings-dialog/element-settings-dialog';
 import { JOINT_CONSTRAINTS } from '../constants/JointConstraints';
-import { CellDataDto, CellPanelInfo } from '../dtos/cell-data.dto';
+import { CellDataDto, CellPanelInfo, CellProp } from '../dtos/cell-data.dto';
+import { CellPanelDataDto } from '../dtos/cell-panel-data.dto';
 import { LabelModes } from '../enums/LabelModes';
 import { LocalStorageKeys } from '../enums/LocalStorageKeys';
 import { Themes } from '../enums/Themes';
@@ -312,6 +313,33 @@ export class JointService implements OnDestroy {
     } else {
       this.currentCellPanelInfo$.next(null);
     }
+  }
+
+  public updateCellData(id: ID, dataToSave: CellPanelDataDto) {
+    const cell = this.getCellById(id);
+    const prevData = cell.prop('attrs/data') as CellDataDto;
+
+    const updatedProps: Record<string, CellProp> = { ...prevData.props };
+
+    const RESERVED = new Set(['name', 'uri', 'type']);
+    for (const key of Object.keys(dataToSave)) {
+      if (RESERVED.has(key)) continue;
+      if (updatedProps[key]) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updatedProps[key] = { ...updatedProps[key], value: dataToSave[key] as any };
+      }
+    }
+
+    const updatedData: CellDataDto = {
+      ...prevData,
+      name: (dataToSave['name'] as string) ?? prevData.name,
+      uri: (dataToSave['uri'] as string) ?? prevData.uri,
+      type: (dataToSave['type'] as string) ?? prevData.type,
+      props: updatedProps,
+    };
+
+    cell.prop('attrs/data', updatedData);
+    this._snackBar.open('Element data updated', 'Dismiss', { duration: 3000 });
   }
 
   public toggleCellLabels = (label: LabelModes, ids?: ID[]) => {
