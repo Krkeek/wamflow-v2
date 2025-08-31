@@ -26,14 +26,14 @@ import { NavControlService } from './navControlService';
 import { CustomLink } from '../Infrastructure/CustomLink';
 import { WamLinks } from '../enums/WamLinks';
 import html2canvas from 'html2canvas';
-import { CellPanelInfo } from '../dtos/cell-data.dto';
+import { CellDataDto, CellPanelInfo } from '../dtos/cell-data.dto';
 import { Themes } from '../enums/Themes';
 import { ThemeService } from './themeService';
 import { LocalStorageKeys } from '../enums/LocalStorageKeys';
 import ToolsView = dia.ToolsView;
 import ID = dia.Cell.ID;
 import CellView = dia.CellView;
-import { CellDataDto, GraphSave } from '../interfaces/GraphSave';
+import {  GraphSave } from '../interfaces/GraphSave';
 
 @Injectable({
   providedIn: 'root',
