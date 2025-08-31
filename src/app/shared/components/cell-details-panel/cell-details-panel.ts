@@ -115,7 +115,7 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     this._form = this.formBuilder.group(group);
     this.subscription.add(
       this.form.valueChanges
-        .pipe(debounceTime(700), distinctUntilChanged())
+        .pipe(debounceTime(400), distinctUntilChanged())
         .subscribe((v: CellPanelDataDto) => {
           {
             if (this.isFormValid()) {
