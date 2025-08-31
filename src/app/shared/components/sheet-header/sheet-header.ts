@@ -1,7 +1,7 @@
 import { Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
-import { MatCheckbox } from '@angular/material/checkbox';
+import { MatCheckbox, MatCheckboxChange } from '@angular/material/checkbox';
 import { JointService } from '../../../core/services/jointService';
 import {
   FormBuilder,
@@ -19,6 +19,7 @@ import { NavControlService } from '../../../core/services/navControlService';
 import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-toggle';
 import { WamLinks } from '../../../core/enums/WamLinks';
 import { debounceTime, distinctUntilChanged, Subscription } from 'rxjs';
+import { LabelModes } from '../../../core/enums/LabelModes';
 
 @Component({
   selector: 'app-sheet-header',
@@ -47,7 +48,7 @@ export class SheetHeader implements OnInit, OnDestroy {
   protected _form!: FormGroup;
 
   protected subscriptions: Subscription[] = [];
-  private readonly jointService = inject(JointService);
+  protected readonly jointService = inject(JointService);
   protected readonly navControlService = inject(NavControlService);
   private _snackBar = inject(MatSnackBar);
   private readonly _formBuilder = inject(FormBuilder);
@@ -155,4 +156,14 @@ export class SheetHeader implements OnInit, OnDestroy {
     console.log('Loaded JSON:', text);
     await this.jointService.importJSON(file);
   }
+
+  protected toggleLabels(event: MatCheckboxChange, label: LabelModes) {
+    if (event.checked) {
+      this.jointService.cellLabelMode.next(label);
+    } else {
+      this.jointService.cellLabelMode.next(LabelModes.none);
+    }
+  }
+
+  protected readonly LabelModes = LabelModes;
 }

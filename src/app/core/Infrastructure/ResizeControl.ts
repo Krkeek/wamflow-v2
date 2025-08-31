@@ -1,26 +1,36 @@
 import { dia, elementTools } from '@joint/core';
+import { JOINT_CONSTRAINTS } from '../constants/JointConstraints';
 
 export const ResizeControl = elementTools.Control.extend({
   children: [
     {
-      tagName: 'path',
+      tagName: 'g',
       selector: 'handle',
       attributes: {
-        d: 'M14 12M3 12h11V2',
-        stroke: 'black',
-        'stroke-width': 2,
-        fill: 'none',
         cursor: 'nwse-resize',
+        'pointer-events': 'all',
       },
+      children: [
+        {
+          tagName: 'circle',
+          selector: 'button',
+          attributes: {
+            class: 'settings-btn',
+            r: 7,
+            fill: JOINT_CONSTRAINTS.toolTipSettingColor,
+            cursor: 'nwse-resize',
+          },
+        },
+      ],
     },
   ],
+  getPosition(view: dia.ElementView) {
+    const { width, height } = view.model.size();
+    const x = width;
+    const y = height;
 
-  getPosition: function (view: dia.ElementView) {
-    const model = view.model;
-    const { width, height } = model.size();
-    return { x: width, y: height };
+    return { x, y };
   },
-
   setPosition(view: dia.ElementView, coordinates: { x: number; y: number }) {
     const model = view.model;
 
