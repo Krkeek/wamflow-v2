@@ -8,9 +8,8 @@ describe('SheetHeader', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SheetHeader]
-    })
-    .compileComponents();
+      imports: [SheetHeader],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(SheetHeader);
     component = fixture.componentInstance;
