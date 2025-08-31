@@ -18,6 +18,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { debounceTime, distinctUntilChanged, Subscription } from 'rxjs';
 
 import { CellPanelInfo, CellProp } from '../../../core/dtos/cell-data.dto';
+import { CellPanelDataDto } from '../../../core/dtos/cell-panel-data.dto';
 import { DataTypes } from '../../../core/enums/DataTypes';
 import { JointService } from '../../../core/services/jointService';
 
@@ -113,13 +114,15 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     }
     this._form = this.formBuilder.group(group);
     this.subscription.add(
-      this.form.valueChanges.pipe(debounceTime(700), distinctUntilChanged()).subscribe((v) => {
-        {
-          if (this.isFormValid()) {
-            console.log(v);
+      this.form.valueChanges
+        .pipe(debounceTime(700), distinctUntilChanged())
+        .subscribe((v: CellPanelDataDto) => {
+          {
+            if (this.isFormValid()) {
+              this.jointService.updateCellData(d.id, v);
+            }
           }
-        }
-      }),
+        }),
     );
   }
 

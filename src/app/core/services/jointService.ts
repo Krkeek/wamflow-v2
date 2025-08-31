@@ -17,6 +17,7 @@ import {
 import { ElementSettingsDialog } from '../../shared/components/element-settings-dialog/element-settings-dialog';
 import { JOINT_CONSTRAINTS } from '../constants/JointConstraints';
 import { CellDataDto, CellPanelInfo } from '../dtos/cell-data.dto';
+import { CellPanelDataDto } from '../dtos/cell-panel-data.dto';
 import { LabelModes } from '../enums/LabelModes';
 import { LocalStorageKeys } from '../enums/LocalStorageKeys';
 import { Themes } from '../enums/Themes';
@@ -312,6 +313,11 @@ export class JointService implements OnDestroy {
     } else {
       this.currentCellPanelInfo$.next(null);
     }
+  }
+
+  public updateCellData(id: ID, data: CellPanelDataDto) {
+    const cell = this.getCellById(id);
+    const prevData = cell.prop('attrs/data') as CellDataDto;
   }
 
   public toggleCellLabels = (label: LabelModes, ids?: ID[]) => {
