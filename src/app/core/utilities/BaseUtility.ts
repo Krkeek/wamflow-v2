@@ -46,6 +46,32 @@ export class BaseUtility {
     return true;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public static deepEqual(a: any, b: any): boolean {
+    if (a === b) return true;
+    if (a && b && typeof a === 'object' && typeof b === 'object') {
+      // Arrays
+      if (Array.isArray(a)) {
+        if (!Array.isArray(b) || a.length !== b.length) return false;
+        for (let i = 0; i < a.length; i++) if (!BaseUtility.deepEqual(a[i], b[i])) return false;
+        return true;
+      }
+      // Dates
+      if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
+
+      // Objects
+      const ak = Object.keys(a);
+      const bk = Object.keys(b);
+      if (ak.length !== bk.length) return false;
+      for (const k of ak) {
+        if (!Object.prototype.hasOwnProperty.call(b, k)) return false;
+        if (!BaseUtility.deepEqual(a[k], b[k])) return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
   public static printSelectedCellsForDebug = (prevIds: ID[], currIds: ID[]) => {
     console.log('Previous:');
     console.log(prevIds);

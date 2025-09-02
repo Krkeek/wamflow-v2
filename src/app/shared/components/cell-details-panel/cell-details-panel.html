@@ -55,9 +55,21 @@
 }
 
 <mat-menu #more>
-  <button mat-menu-item>
+  <button
+    [disabled]="!_historyState().canUndo"
+    (click)="$event.stopPropagation(); undoLastChange()"
+    mat-menu-item
+  >
     <mat-icon>undo</mat-icon>
     Undo
+  </button>
+  <button
+    [disabled]="!_historyState().canRedo"
+    (click)="$event.stopPropagation(); redoLastChange()"
+    mat-menu-item
+  >
+    <mat-icon>redo</mat-icon>
+    Redo
   </button>
   <button mat-menu-item>
     <mat-icon>format_list_bulleted_add</mat-icon>

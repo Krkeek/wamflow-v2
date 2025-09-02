@@ -31,6 +31,7 @@ import { BaseUtility } from '../utilities/BaseUtility';
 
 import { CellCreatorService } from './cellCreatorService';
 import { DialogService } from './dialogService';
+import { FormHistoryService } from './formHistoryService';
 import { HistoryService } from './historyService';
 import { LocalStorageService } from './localStorageService';
 import { NavControlService } from './navControlService';
@@ -64,6 +65,8 @@ export class JointService implements OnDestroy {
   private readonly _navControlService = inject(NavControlService);
   private readonly _cellCreatorService = inject(CellCreatorService);
   private readonly _themeService = inject(ThemeService);
+  private readonly _formHistoryService = inject(FormHistoryService);
+
   private _toolsView?: ToolsView;
   private _toolsViewLinks?: ToolsView;
   private _paper?: dia.Paper;
@@ -490,6 +493,7 @@ export class JointService implements OnDestroy {
             .getCells()
             .filter((cell) => idsToRemove.includes(cell.id));
           this.graph.removeCells(cellsToRemove);
+          this._formHistoryService.clear(idsToRemove);
 
           let deleteMessage = 'Element Deleted';
           if (cellsToRemove.length > 1) deleteMessage = 'Elements Deleted';

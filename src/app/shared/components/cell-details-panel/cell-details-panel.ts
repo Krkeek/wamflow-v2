@@ -15,12 +15,13 @@ import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltip } from '@angular/material/tooltip';
-import { debounceTime, distinctUntilChanged, Subscription } from 'rxjs';
+import { debounceTime, filter, pairwise, startWith, Subscription } from 'rxjs';
 
 import { CellPanelInfo, CellProp } from '../../../core/dtos/cell-data.dto';
-import { CellPanelDataDto } from '../../../core/dtos/cell-panel-data.dto';
 import { DataTypes } from '../../../core/enums/DataTypes';
+import { FormHistoryService } from '../../../core/services/formHistoryService';
 import { JointService } from '../../../core/services/jointService';
+import { BaseUtility } from '../../../core/utilities/BaseUtility';
 
 @Component({
   selector: 'app-cell-details-panel',
@@ -46,6 +47,12 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
   protected _form!: FormGroup;
   protected _dto = signal<CellPanelInfo | null>(null);
 
+  protected _historyState = signal<{ canUndo: boolean; canRedo: boolean }>({
+    canUndo: false,
+    canRedo: false,
+  });
+
+  private readonly formHistoryService = inject(FormHistoryService);
   private readonly jointService = inject(JointService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly _snackBar = inject(MatSnackBar);
@@ -66,8 +73,12 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
   public ngOnInit() {
     this.subscription.add(
       this.jointService.currentCellPanelInfo$.subscribe((d) => {
+        if (!d?.data) {
+          this._dto.set(null);
+          return;
+        }
         this._dto.set(d);
-        if (!this._dto()) return;
+        this._historyState.set(this.formHistoryService.updateHistoryState(this.dto.id));
         this.buildForm();
       }),
     );
@@ -101,9 +112,32 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     this.jointService.resetCellsData([this.dto.id]);
   };
 
+  protected undoLastChange = (): void => {
+    if (this.isFormValid()) {
+      const prev = this.formHistoryService.undo(this.dto.id, this.form.value);
+      this._historyState.set(this.formHistoryService.updateHistoryState(this.dto.id));
+
+      if (prev) {
+        this.form.patchValue(prev, { emitEvent: false });
+        this.jointService.updateCellData(this.dto.id, prev);
+      }
+    }
+  };
+
+  protected redoLastChange = (): void => {
+    if (this.isFormValid()) {
+      const next = this.formHistoryService.redo(this.dto.id, this.form.value);
+      this._historyState.set(this.formHistoryService.updateHistoryState(this.dto.id));
+
+      if (next) {
+        this.form.patchValue(next, { emitEvent: false });
+        this.jointService.updateCellData(this.dto.id, next);
+      }
+    }
+  };
+
   private buildForm() {
     const d = this.dto;
-    if (!d) return;
     const group: Record<string, FormControl> = {
       name: this.formBuilder.control(d.data.name ?? '', []),
       uri: this.formBuilder.control(d.data.uri ?? '', []),
@@ -115,11 +149,18 @@ export class CellDetailsPanel implements OnInit, OnDestroy {
     this._form = this.formBuilder.group(group);
     this.subscription.add(
       this.form.valueChanges
-        .pipe(debounceTime(400), distinctUntilChanged())
-        .subscribe((v: CellPanelDataDto) => {
+        .pipe(
+          debounceTime(700),
+          startWith(this.form.getRawValue()),
+          pairwise(),
+          filter(([prev, curr]) => !BaseUtility.deepEqual(prev, curr)),
+        )
+        .subscribe(([prev, curr]) => {
           {
             if (this.isFormValid()) {
-              this.jointService.updateCellData(d.id, v);
+              this.formHistoryService.push(d.id, prev);
+              this._historyState.set(this.formHistoryService.updateHistoryState(this.dto.id));
+              this.jointService.updateCellData(d.id, curr);
             }
           }
         }),
